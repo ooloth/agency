@@ -1,49 +1,37 @@
-# vitals.config.toml
+# vitals.config.toml — project registry
 #
-# Non-secret params (dataset names, selectors, URLs) are stored plainly here.
-# Secrets (tokens, keys) are referenced as env var names (e.g. "${AXIOM_TOKEN}")
-# and injected at runtime via: op run --env-file=secrets.env -- next dev
-# See secrets.env.example for the expected env vars and their op:// paths.
-#
-# GCP: no secrets needed when using Application Default Credentials (ADC)
-# Axiom: requires AXIOM_TOKEN (see secrets.env.example)
+# Lists all monitored projects and where their data lives.
+# Secrets are referenced as env var names injected via:
+#   op run --env-file=secrets.env -- <command>
+# See secrets.env.example for op:// paths.
 
 [[projects]]
 id = "pilots"
 name = "Pilots"
 
-  [[projects.panels]]
-  type = "errors"
+  [[projects.logs]]
   source = "axiom"
-
-  [projects.panels.params]
   dataset = "pilots"
   token = "${AXIOM_TOKEN}"
 
-# ── Reference configs (commented out until real credentials are available) ────
+# ── Reference configs (uncomment when credentials are available) ──────────────
 
 # [[projects]]
 # id = "my-work-api"
 # name = "My Work API"
 #
-#   [[projects.panels]]
-#   type = "errors"
+#   [[projects.logs]]
 #   source = "google_cloud_logging"
-#
-#   [projects.panels.params]
-#   project_id = "my-gcp-project-123"        # not a secret — visible in GCP console
-#   # log_name = "projects/my-project/logs/app"  # optional: filter to a specific log
+#   project_id = "my-gcp-project-123"
+#   # log_name = "projects/my-project/logs/app"  # optional filter
 
 # [[projects]]
 # id = "my-grafana-service"
 # name = "My Grafana Service"
 #
-#   [[projects.panels]]
-#   type = "errors"
+#   [[projects.logs]]
 #   source = "grafana_loki"
-#
-#   [projects.panels.params]
 #   base_url = "https://grafana.yourcompany.com"
-#   datasource_uid = "abc123"                # Grafana → Connections → Data sources
+#   datasource_uid = "abc123"
 #   selector = '{app="my-service", env="prod"}'
-#   # token = "${GRAFANA_TOKEN}"             # only needed if auth required
+#   # token = "${GRAFANA_TOKEN}"

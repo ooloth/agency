@@ -1,86 +1,80 @@
 # Design Decisions
 
-Decisions made during initial planning, with rationale.
+---
+
+## Prompts + scripts over a web dashboard
+
+**Decision**: No UI. Agent prompts for analysis and interpretation; optional
+single-file Python scripts for pre-aggregating structured/high-volume data.
+
+**Why**: A dashboard requires building and maintaining a rendering layer that
+adds no analytical value. An LLM can interpret raw or lightly aggregated data
+and surface recommendations directly. The 80/20 is dramatically better: days
+of effort vs weeks, with higher-quality output (interpretation, not just display).
+
+**Scripts when**: Raw data volume would waste token budget or slow the agent
+down. A 20-line script that aggregates 200 log lines into 5 rows earns its place.
+Not required for every question — prompts alone are fine to start.
 
 ---
 
-## Static dashboard over periodic report
+## TOML project registry
 
-**Decision**: Build a web dashboard, not a scheduled text/markdown report.
+**Decision**: `vitals.config.toml` as the single source of truth for monitored
+projects and where their data lives.
 
-**Why**: The primary value of this tool is aggregation + deduplication (e.g. "42 instances of this error type"). A flat report hits a ceiling quickly as data sources and question types grow. A dashboard with sidebar navigation scales naturally — each new question is a new route, not a new section in a linear document.
+**Why**: TOML is readable for hand-authoring, handles nested arrays of objects
+cleanly, and avoids YAML's indentation sensitivity and edge cases. Python 3.11+
+has `tomllib` built in; no extra dependency needed.
 
-**Tradeoff**: More upfront effort than a cron + email digest. Accepted because the dashboard is the product.
-
----
-
-## Config-driven panel/project model
-
-**Decision**: Projects and panels are declared in `vitals.config.toml`. The app reads config at runtime; no UI needed to add a project initially.
-
-**Why**: Decouples "what to show" from "how to show it". Adding a project requires no code changes. The config schema is also the future form schema for UI-based onboarding.
-
-**Evolution**: Long-term, a UI onboarding flow generates the same TOML structure. The app never needs to distinguish hand-authored from UI-generated config.
+**Scope**: The registry holds non-secret config (project IDs, dataset names,
+log selectors, source types). Secrets are in `secrets.env` (gitignored), resolved
+at runtime via `op run`.
 
 ---
 
-## TOML for config
+## 1Password via `op run`
 
-**Decision**: `vitals.config.toml` over YAML or JSON.
+**Decision**: Secrets injected as env vars via `op run --env-file=secrets.env -- <cmd>`.
+Scripts and agents read `os.environ` only — no SDK, no secrets on disk.
 
-**Why**: TOML handles arrays of objects (projects + panels) more cleanly than YAML. Avoids YAML's indentation sensitivity and surprising parse behavior (unquoted strings, boolean edge cases). JSONC was considered but TOML is more readable for hand-authoring.
+**Why**: Complete decoupling from 1Password at the code level. Portable — swap
+1Password for any other secret manager by changing `secrets.env`, not code.
+Secrets exist only in the process environment for the lifetime of the run.
 
----
-
-## Discriminated union for panel/source config
-
-**Decision**: `source` is the discriminant field in panel config, mapped to typed params per source.
-
-**Why**: Different log providers (GCP Logging, Grafana Loki, Axiom, Logfire) require different params. A discriminated union gives compile-time safety and makes the fetcher registry straightforward: `source` → fetch function.
-
-**Example**:
-```ts
-type ErrorsPanelConfig =
-  | { type: "errors"; source: "grafana_loki"; params: GrafanaLokiParams }
-  | { type: "errors"; source: "google_cloud_logging"; params: GCLParams }
-```
+**Setup**: `secrets.env` (gitignored) maps env var names to `op://` paths.
+`vitals.config.toml` references env var names (e.g. `"${AXIOM_TOKEN}"`).
 
 ---
 
-## 1Password via `op run` (not SDK)
+## Python + uv run for scripts
 
-**Decision**: Secrets injected as env vars via `op run --env-file=secrets.env -- next dev`. App reads `process.env` only.
+**Decision**: Single-file Python scripts with inline `uv` dependencies. No
+package management, no virtualenvs to maintain, no build step.
 
-**Why**: App is completely decoupled from 1Password. No SDK dependency. Secrets never touch disk. Portable — can swap 1Password for `.env` or any other secret manager without touching app code.
-
-**Local setup**: `secrets.env` (gitignored) maps env var names to `op://` paths. `vitals.config.toml` references env var names.
-
----
-
-## SQLite for historical snapshots
-
-**Decision**: Store each panel's query result with a timestamp in SQLite.
-
-**Why**: Enables trend/delta views ("up from 10 yesterday, down from 200 last week"). A live dashboard without history only shows a snapshot — history makes it tell a story.
-
-**Not for performance**: Query APIs are fast enough. This is purely a history feature.
-
-**When to build**: After one panel works end-to-end with live data. Don't design the storage schema until the data shape is known.
+**Why**: Scripts are utilities, not a product. `uv run script.py` handles deps
+inline. Python has first-class support for every data source we care about
+(Axiom, GCP, Grafana). Easy to read, easy to modify, no TypeScript compilation.
 
 ---
 
-## Next.js App Router with server components
+## Prompts-first, scripts when earned
 
-**Decision**: Server components fetch data directly — no separate API layer.
+**Decision**: Start with markdown prompts that describe what to query and how
+to interpret results. Add a deterministic script only when it demonstrably
+saves tokens or agent time.
 
-**Why**: Data fetching colocated with the component that renders it fits the config-driven panel architecture. Each panel is an isolated server component that reads its own config slice and fetches its own data. No global state complexity.
-
-**Tradeoff**: Next.js carries opinions and weight beyond what a personal local tool needs. Accepted because familiarity reduces friction, and the server component model is genuinely well-suited to this pattern.
+**Why**: Premature scripting creates maintenance burden for questions that may
+evolve. A prompt is easier to refine than code. Scripts are written once the
+question is stable and the data volume justifies it.
 
 ---
 
-## Local-only to start
+## Vitals vs Agency
 
-**Decision**: No deployment, no auth, no hosting concerns for now.
+**Decision**: Keep as separate repos with distinct purposes.
 
-**Why**: Single user (the owner), running on personal or work laptop. `op run` for secrets works perfectly in this context. Deployment is a future concern once the tool proves its value.
+**Why**: Vitals is for *knowing* — monitoring, awareness, analysis. Agency is
+for *doing* — autonomous implementation, fix loops, PRs. They compose naturally
+(vitals surfaces something → agency acts on it) but have different inputs,
+outputs, and rhythms. Merging would muddy both.

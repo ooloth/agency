@@ -2,77 +2,66 @@
 
 ## What Vitals Is
 
-A personal observability dashboard for one user (the owner). Aggregates answers to proactively useful questions across personal and work projects — errors, deployments, latency, etc. — in a single place.
+A personal monitoring and awareness system. Aggregates answers to proactively
+useful questions across personal and work projects — errors, deployments, costs,
+usage patterns, PRs, tasks, etc. — via agent prompts and deterministic scripts.
 
-Not a Sentry replacement. Not a generic monitoring platform. A curated, config-driven window into the systems you're responsible for, including an agentic "investigate this" capability for drilling into problems.
+Not a dashboard. Not a Sentry replacement. A growing collection of prompts and
+scripts that help you know what's happening across your systems without having
+to remember to check.
+
+## Shape
+
+```
+vitals/
+  vitals.config.toml     # project registry — all monitored projects + context
+  agents/                # markdown prompts for agent-driven analysis
+  scripts/               # optional uv run scripts for structured/high-volume data
+  docs/                  # invariants, auth strategies, per-project context
+  secrets.env.example    # op:// paths for secrets (never commit secrets.env)
+```
 
 ## Core Abstractions
 
-### Project
+### Project Registry (`vitals.config.toml`)
 
-A deployable system you want to monitor. Has a unique ID (used in URLs), a display name, and a list of panels.
+The single source of truth for what's being monitored. Each project declares:
+- Where its logs live (Axiom, GCP Logging, Grafana Loki, etc.)
+- Where its deployments are tracked
+- Any other data sources relevant to it
 
-### Panel
+Agents and scripts read this file to know where to look.
 
-A question + a data source + a renderer. Each panel type (e.g. `errors`) has:
-- One React component that renders the result
-- One query function per supported data source
-- A config block that declares which source to use and what params to pass
+### Agent Prompts (`agents/`)
 
-### Data Source
+Markdown files that define what an agent should do, how to interpret results,
+and what to recommend. Written to be invoked via Claude Code skills or manually
+referenced. Each prompt is self-contained — it describes both the question and
+how to answer it.
 
-A provider of raw data (logs, metrics, deployment events, etc.). Each source has:
-- A fetcher function that accepts typed params and returns structured data
-- A TypeScript type for its params shape
+### Scripts (`scripts/`)
 
-## Config-Driven Architecture
+Single-file Python scripts using `uv run` inline dependencies. Written only when
+determinism or token efficiency matters — e.g. pre-aggregating 200 log lines into
+a 5-row summary before handing to an agent. Not required for every question.
 
-Projects are onboarded via `vitals.config.toml` at the repo root. Each project declares which panels it supports and what params each panel needs.
+## Secrets
 
-The `source` field in each panel config is the discriminant — it determines which fetcher runs and which params shape is expected. This is modelled as a TypeScript discriminated union.
+Secrets are never stored in files. `secrets.env` (gitignored) maps env var names
+to `op://` paths. Everything runs via:
 
-**Adding a new project**: add a block to `vitals.config.toml` — no code changes.
-**Adding a new panel type**: add a component + query function(s) + config type.
-**Adding a new data source for an existing panel**: add a fetcher + extend the discriminated union.
-
-## Evolution Path
-
-The config file is hand-authored to start. The long-term goal is a UI-based onboarding flow that generates the same config structure — dropdowns populated by querying provider APIs (e.g. list available GCP projects, Grafana datasources). The config schema is the form schema; the UI just writes it instead of the human.
-
-## Tech Stack
-
-- **Framework**: Next.js (App Router, server components)
-- **Language**: TypeScript
-- **Config format**: TOML (`vitals.config.toml`)
-- **Persistence**: SQLite (for historical snapshots enabling trend/delta views)
-- **Secrets**: 1Password CLI via `op run --env-file=secrets.env -- next dev`
-- **Styling**: TBD
-
-## Data Flow
-
-```
-vitals.config.toml
-       ↓
-Next.js server component (per panel, per page load)
-       ↓
-fetcher(source, params) → raw data
-       ↓
-SQLite (store snapshot with timestamp)
-       ↓
-render component → UI
+```bash
+op run --env-file=secrets.env -- uv run scripts/foo.py
+# or
+op run --env-file=secrets.env -- claude ...
 ```
 
-## URL Structure
+## Relationship to Agency
 
-```
-/                          → project list / home
-/projects/[id]             → default panel for a project
-/projects/[id]/[panelType] → specific panel
-```
+Vitals and Agency are complementary, not competing:
 
-## What Vitals Is Not
+- **Vitals** answers: "what's happening, and should I care?"
+- **Agency** answers: "what should be done, and can you do it?"
 
-- Not a real-time streaming dashboard (poll on page load is fine)
-- Not multi-user (no auth, no accounts)
-- Not a replacement for alerts (complements them — surfaces things that don't warrant alerts)
-- Not a hosted service (runs locally only, for now)
+Vitals notices something worth acting on → hand it to Agency to investigate and fix.
+Awareness → action.
