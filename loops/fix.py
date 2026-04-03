@@ -1,7 +1,9 @@
 """Agentic fix loop: pick an open issue, implement a fix, review, and open a PR."""
 
+import dataclasses
 import json
 import sys
+import time
 from pathlib import Path
 
 from loops.common import (
@@ -13,15 +15,72 @@ from loops.common import (
     issue_context,
     load_project,
     log,
+    make_run_dir,
     next_open_issue,
     open_pr,
+    open_reflection_issues,
+    post_reflection_findings,
     prepare_branch,
+    recent_run_dirs,
     run_command,
     run_tests,
+    write_step,
 )
 
 IMPLEMENT_TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 REVIEW_TOOLS = ["Read", "Glob", "Grep"]
+
+
+@dataclasses.dataclass
+class _RunCtx:
+    run_dir: Path
+    steps: list[dict]
+    refs: list[dict]
+
+
+def _step(
+    ctx: _RunCtx,
+    name: str,
+    prompt: str,
+    content: str,
+    allowed_tools: list[str] | None = None,
+) -> dict:
+    """Run one agent step: time it, persist output, collect reflections."""
+    t0 = time.monotonic()
+    out = agent(prompt, content, allowed_tools=allowed_tools)
+    ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
+    write_step(ctx.run_dir, name, out)
+    ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
+    return out
+
+
+def _run_retrospective(
+    run_dir: Path,
+    reflections: list[dict],
+    metadata: dict,
+) -> None:
+    """Run the retrospective agent and post any findings as GitHub issues."""
+    context = json.dumps(
+        {
+            "run_metadata": metadata,
+            "reflections": reflections,
+            "recent_log_dirs": [str(d) for d in recent_run_dirs(limit=10) if d != run_dir],
+            "open_reflection_issues": open_reflection_issues(),
+        }
+    )
+    log.info("[retrospective] analysing run...")
+    retro = agent("prompts/retrospective.md", context)
+    report = retro.get("run_report", "")
+    sys.stdout.write(f"\n{'═' * 60}\n{report}\n{'═' * 60}\n")
+    sys.stdout.flush()
+    (run_dir / "report.md").write_text(report)
+    write_step(run_dir, "retrospective", retro)
+    findings = retro.get("findings", [])
+    if findings:
+        log.info("[retrospective] posting %s finding(s)...", len(findings))
+        post_reflection_findings(findings)
+    else:
+        log.info("[retrospective] no findings to post")
 
 
 def run_fix(
@@ -40,6 +99,12 @@ def run_fix(
         return
 
     log.info("[fix] issue #%s in %s", issue_number, project_path)
+
+    run_dir = make_run_dir(f"fix-{issue_number}")
+    ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[])
+    started_at = time.monotonic()
+    converged = False
+    exit_code = 0
 
     for key, label in [
         ("install", "installing dependencies"),
@@ -60,7 +125,13 @@ def run_fix(
 
         for round_n in range(max_rounds):
             log.info("[fix] round %s: implementing...", round_n + 1)
-            impl = agent("prompts/fix/implement.md", issue, allowed_tools=IMPLEMENT_TOOLS)
+            impl = _step(
+                ctx,
+                f"implement-{round_n + 1}",
+                "prompts/fix/implement.md",
+                issue,
+                IMPLEMENT_TOOLS,
+            )
 
             commit_if_dirty(impl.get("pr_title", f"fix: issue #{issue_number}"), project_path)
 
@@ -95,11 +166,18 @@ def run_fix(
             )
 
             log.info("[fix] round %s: reviewing...", round_n + 1)
-            reviewed = agent("prompts/fix/review.md", review_context, allowed_tools=REVIEW_TOOLS)
+            reviewed = _step(
+                ctx,
+                f"review-{round_n + 1}",
+                "prompts/fix/review.md",
+                review_context,
+                REVIEW_TOOLS,
+            )
 
             if reviewed["approved"]:
                 open_pr(branch, impl, project_path)
                 log.info("[fix] issue #%s: PR opened (%s)", issue_number, impl["pr_title"])
+                converged = True
                 return
 
             log.info("[fix] round %s: revision needed — %s", round_n + 1, reviewed["feedback"])
@@ -114,7 +192,19 @@ def run_fix(
         log.error(
             "[escalate] issue #%s: did not converge after %s rounds", issue_number, max_rounds
         )
-        sys.exit(1)
+        exit_code = 1
 
     finally:
         git("checkout", original_branch, cwd=project_path)
+        metadata = {
+            "run_type": "fix",
+            "project_id": project_id,
+            "issue_number": issue_number,
+            "duration_seconds": round(time.monotonic() - started_at, 1),
+            "steps": ctx.steps,
+            "converged": converged,
+            "exit_code": exit_code,
+        }
+        _run_retrospective(run_dir, ctx.refs, metadata)
+        if exit_code != 0:
+            sys.exit(exit_code)
