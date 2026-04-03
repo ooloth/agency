@@ -1,36 +1,46 @@
 import json
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
 
-def _parse_result(text: str) -> dict:
-    # strip markdown code fences if present
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1]
-        text = text.rsplit("```", 1)[0]
-    return json.loads(text.strip())
-
-
-def agent(prompt_file: str, context: str) -> dict:
+def agent(prompt_file: str, context: str, max_turns: int = 15) -> dict:
     prompt = (ROOT / prompt_file).read_text()
-    envelope = subprocess.run(
-        ["claude", "-p", f"{context}\n\n---\n\n{prompt}", "--output-format", "json"],
-        capture_output=True,
-        text=True,
+    output_file = Path(tempfile.mktemp(suffix=".json"))
+    full_prompt = (
+        f"{context}\n\n---\n\n{prompt}\n\n"
+        f"Write your JSON output to this file: {output_file}\n"
+        f"Do not include the JSON in your text response."
+    )
+    print(f"\n{'─' * 60}")
+    subprocess.run(
+        ["claude", "-p", full_prompt, "--max-turns", str(max_turns)],
         cwd=ROOT,
     )
-    outer = json.loads(envelope.stdout)
-    return _parse_result(outer["result"])
+    print(f"{'─' * 60}\n")
+    if not output_file.exists():
+        raise RuntimeError(f"Agent did not write output to {output_file}")
+    result = json.loads(output_file.read_text())
+    output_file.unlink()
+    return result
+
+
+def load_project(project_id: str) -> dict:
+    config = tomllib.loads((ROOT / "projects/projects.toml").read_text())
+    project = next((p for p in config["projects"] if p["id"] == project_id), None)
+    if project is None:
+        raise ValueError(f"Project '{project_id}' not found in projects.toml")
+    if "path" in project:
+        project["path"] = str(Path(project["path"]).expanduser().resolve())
+    return project
 
 
 def project_context(project_id: str) -> str:
-    config = tomllib.loads((ROOT / "projects/projects.toml").read_text())
-    project = next(p for p in config["projects"] if p["id"] == project_id)
+    project = load_project(project_id)
     context_path = ROOT / f"projects/{project_id}/context.md"
     context = context_path.read_text() if context_path.exists() else ""
     return f"Project config:\n{json.dumps(project, indent=2)}\n\nProject context:\n{context}"

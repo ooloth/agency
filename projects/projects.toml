@@ -18,7 +18,7 @@ scans = ["logs"]
 id = "vitals"
 name = "Vitals"
 scans = ["codebase"]
-path = "/Users/michael/Repos/ooloth/vitals"
+path = "~/Repos/ooloth/vitals"
 
 # ── Reference configs (uncomment when credentials are available) ──────────────
 
