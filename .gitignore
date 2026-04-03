@@ -12,5 +12,8 @@ secrets.env
 # trekker
 .trekker/
 
+# run logs (generated)
+.logs/
+
 # misc
 .DS_Store

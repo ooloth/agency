@@ -67,6 +67,50 @@ def post_issues(issues: list[dict], *, dry_run: bool = False) -> None:
             )
 
 
+def open_reflection_issues() -> list[dict]:
+    """Return open agent-reflection issues (number, title, truncated body)."""
+    result = gh(
+        "issue",
+        "list",
+        "--label",
+        "agent-reflection",
+        "--json",
+        "number,title,body",
+        "--limit",
+        "50",
+    )
+    issues = json.loads(result.stdout)
+    return [
+        {"number": i["number"], "title": i["title"], "body_excerpt": i["body"][:300]}
+        for i in issues
+    ]
+
+
+def comment_on_issue(issue_number: int, body: str) -> None:
+    """Post a comment on an existing GitHub issue."""
+    gh("issue", "comment", str(issue_number), "--body", body, capture=False)
+
+
+def post_reflection_findings(findings: list[dict]) -> None:
+    """Open new issues or comment on existing ones from retrospective findings."""
+    for finding in findings:
+        if finding.get("action") == "comment":
+            comment_on_issue(finding["issue_number"], finding["body"])
+        else:
+            labels = ",".join(finding.get("labels", ["agent-reflection"]))
+            gh(
+                "issue",
+                "create",
+                "--title",
+                finding["title"],
+                "--body",
+                finding["body"],
+                "--label",
+                labels,
+                capture=False,
+            )
+
+
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:
     """Push the branch and open a pull request for the given implementation."""
     git("push", "-u", "origin", branch, cwd=project_path, capture=False)
