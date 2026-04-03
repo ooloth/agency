@@ -23,16 +23,17 @@ flowchart LR
     end
 ```
 
-**Scan** runs read-only: queries logs, reads codebases, or checks whatever
-you configure — surfaces anything worth acting on, and posts well-formed
-GitHub issues. **Fix** runs write: picks up open issues, implements solutions
-in fresh agent subprocesses, and opens PRs after a review pass. GitHub issues
-are the handoff — scan and fix are deliberately decoupled.
+**Scan** runs are read-only: they query logs, read codebases, or check whatever else you can think
+of to configure — they surface anything worth acting on, and post well-formed GitHub issues.
 
-The loops are fixed. What varies is the scan configuration. Adding a new scan
-type is adding a prompt file and a scan block in `projects.json`. Each project
-configures each scan type with its own calibration — what's normal, what to
-flag, what to ignore — while the same loop machinery handles the rest.
+**Fix** runs write: they pick up open issues, implement solutions in fresh agent subprocesses,
+and open PRs after a review pass. GitHub issues are the handoff mechanism — scan and fix are
+deliberately decoupled.
+
+The loops are fixed. What varies is the scan configuration. Adding a new scan type is adding a
+prompt file and a scan block in `projects.json`. Each project configures each scan type with its
+own calibration — what's normal, what to flag, what to ignore — while the same loop machinery
+handles the rest.
 
 ---
 
@@ -63,14 +64,12 @@ op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs
 
 ## Docs
 
-| What                                            | Where                          |
-| ----------------------------------------------- | ------------------------------ |
-| Philosophy and goals                            | `docs/philosophy.md`           |
-| Invariants to uphold                            | `docs/rules.md`                |
-| Design decisions                                | `docs/decisions/`              |
-| Roadmap                                         | `docs/roadmap.md`              |
-| Auth strategies by provider                     | `docs/architecture/auth.md`    |
-| How to add projects, scan types, debug failures | `docs/playbooks/`              |
-| Discoveries from running the loops              | `docs/learnings/`              |
-| Registered projects and data sources            | `projects/projects.json`       |
-| Open issues to fix                              | `gh issue list`                |
+| What                                            | Where                       |
+| ----------------------------------------------- | --------------------------- |
+| Philosophy and goals                            | `docs/philosophy.md`        |
+| Design decisions                                | `docs/decisions/`           |
+| Invariants to uphold                            | `docs/rules.md`             |
+| Discoveries from running the loops              | `docs/learnings/`           |
+| How to add projects, scan types, debug failures | `docs/playbooks/`           |
+| Auth strategies by provider                     | `docs/architecture/auth.md` |
+| Roadmap                                         | `docs/roadmap.md`           |
