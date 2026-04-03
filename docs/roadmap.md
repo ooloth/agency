@@ -64,6 +64,35 @@
       GitHub issues; open question: how to capture the full run transcript
       for the reflection agent to read (tee stdout to a log file?)
 
+### Domain knowledge
+
+- [ ] Decide where project-specific domain knowledge lives — the knowledge that
+      tells agency not just *what to flag* but *what each project is*: its
+      architecture, domain concepts, and conventions. Without this, scan agents
+      can only pattern-match on generic heuristics; with it, they produce
+      findings calibrated to the project's actual shape.
+
+      **Options under consideration:**
+
+      - **`CLAUDE.md` in each target repo** — already exists in most projects;
+        readable at scan time; designed for coding agents working *within* the
+        project, not optimized for observation; requires reading foreign repos
+        at runtime
+      - **`docs/projects/<name>.md` in agency** — agency-owned, purpose-written
+        for observation tasks; one file per project; some duplication with what
+        target repos already document
+      - **`skills/<domain>.md` in agency** — reusable domain knowledge organized
+        by concept rather than project (e.g. `skills/auth.md`,
+        `skills/payments.md`); multiple projects can draw on the same skill;
+        separates domain concepts (reusable) from project calibration (already
+        in `projects.json`)
+      - **Hybrid** — `skills/` for shared domain concepts + per-project
+        calibration stays in `projects.json` + target-repo `CLAUDE.md` read
+        opportunistically at scan time
+
+      The hybrid is likely right, but needs a concrete first case to validate
+      the shape before committing to a structure.
+
 ### Project config
 
 - [x] Structured scan config in `projects.json`: required `normal`, `flag`,

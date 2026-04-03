@@ -12,6 +12,23 @@ are trustworthy enough to run without supervision.
 
 ---
 
+## Why a command center, not a tool within projects
+
+Agency does not live inside the projects it operates on. It observes them and
+acts on them from outside. You configure projects into agency; your attention
+stays here; your effects land in their repos as issues and PRs.
+
+This separation matters. A tool invoked within a project's repo inherits that
+project's context, dependencies, and assumptions. A command center has a stable
+vantage point independent of any single project's state — it can observe
+multiple projects with the same machinery, apply consistent calibration across
+all of them, and remain unaffected when any one project changes shape.
+
+The project list is configuration. The loops are infrastructure. Neither belongs
+to the other.
+
+---
+
 ## Why unattended operation requires deterministic coordination
 
 An interactive agent can recover from a bad decision because a human is
@@ -107,3 +124,40 @@ toward it.
 When the coordinator grows beyond what you can read in five minutes, something
 has gone wrong. Complexity belongs in prompts, where it is visible, editable,
 and testable by running the loop.
+
+---
+
+## When agents struggle, fix the prompts
+
+The right response to a scan that produces noise or misses signal is never
+"try harder." It is always a missing piece of context, calibration, or
+structure: a `normal`/`flag`/`ignore` entry that wasn't there, a prompt that
+didn't define what "actionable" means, a schema that allowed ambiguity the
+agent resolved wrong.
+
+Find the gap. Close it. The next run will be better — not because the agent
+improved, but because the harness did.
+
+---
+
+## Knowledge compounds across runs
+
+Each run should leave agency better-calibrated to each project. The
+`learnings/` directory captures discoveries from running the loops — not
+general programming knowledge, but observations about how agency behaves
+against real projects: what the prompts get wrong, where the coordinator
+breaks, what signal looks like in practice.
+
+This is the feedback mechanism. A loop that doesn't improve the harness after
+failures is a loop that will keep making the same mistakes. The goal is a
+system that gets sharper over time, not one that stays at its initial
+calibration.
+
+---
+
+## The loops are the product. The issues and PRs are the output.
+
+The value agency produces — found bugs, fixed code, opened PRs — is the
+output. The loops, prompts, and calibrations that produce it reliably are
+the product. Investment belongs in the product. The output is what justifies
+that investment, not the other way around.

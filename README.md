@@ -6,7 +6,9 @@
 > This software may change or break without notice. No support or warranty is provided.
 > Use at your own risk.
 
-Agency contains autonomous agent loops that scan projects for problems and then fix them.
+Agency is a base of operations for the projects you maintain — a command center from which you scan
+for problems, triage findings, and fix issues across codebases you don't live in. You configure
+projects into it; your effects land in their repos as issues and PRs.
 
 ```mermaid
 flowchart LR
@@ -23,15 +25,16 @@ flowchart LR
     end
 ```
 
-- **Scan runs are read-only**: they query logs, read codebases, or check whatever else you can think
-  of to configure — they surface anything worth acting on, and post well-formed GitHub issues
+## How it works
+
+- **Scan runs are read-only**: they query logs, read codebases, or check whatever else you configure
+  — they surface anything worth acting on and post well-formed GitHub issues
 - **Fix runs write**: they pick up open issues, implement solutions in fresh agent subprocesses,
-  and open PRs after a review pass. GitHub issues are the handoff mechanism — scan and fix are
-  deliberately decoupled
-- **The loops are fixed:** what varies are the scan configurations. Adding a new scan type is adding a
-  prompt file and a scan block in `projects.json`. Scans configurations can be applied to multiple
-  projects or calibrated for just one — what's normal, what to flag, what to ignore — while the
-  same loop machinery handles the rest.
+  and open PRs after a review pass — GitHub issues are the handoff mechanism, so scan and fix run
+  on independent schedules
+- **The loops are fixed**: what varies are the scan configurations — adding a new scan type is
+  adding a prompt file and a scan block in `projects.json`; calibrations can be shared across
+  projects or tuned per project while the same loop machinery handles the rest
 
 ---
 
@@ -39,32 +42,67 @@ flowchart LR
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Usage
+## Configure
+
+### Register a project
+
+Add an entry to `projects/projects.json`:
+
+```json
+{
+  "id": "my-project",
+  "name": "My Project",
+  "path": "~/Repos/me/my-project",
+  "install": "npm ci",
+  "test": "npm test",
+  "scans": [
+    {
+      "type": "codebase/dead-code",
+      "normal": ["Utility helpers that are imported dynamically"],
+      "flag": ["Exported functions with no internal or external callers"],
+      "ignore": ["Legacy adapters kept for backwards compatibility"]
+    }
+  ]
+}
+```
+
+`normal`, `flag`, and `ignore` are required — they calibrate the agent to each project's specific
+signal and noise rather than relying on generic heuristics.
+
+### Add a scan type
+
+1. Add a prompt file to `prompts/scan/find/` describing what to look for
+2. Add a matching scan block (with `type`, `normal`, `flag`, `ignore`) to the project in
+   `projects.json`
+
+See `docs/playbooks/` for step-by-step instructions.
+
+## Run
 
 ```bash
 # Scan a project (dry run — prints issues without posting)
-uv run python run.py scan agency --type codebase --dry-run
+uv run python run.py scan my-project --type codebase/dead-code --dry-run
 
 # Scan a project and post issues
-uv run python run.py scan agency --type codebase
+uv run python run.py scan my-project --type codebase/dead-code
 
-# Fix a specific issue in a specific project
-uv run python run.py fix --issue 3 --project agency
+# Fix a specific issue
+uv run python run.py fix --issue 3 --project my-project
 
 # Fix the next open issue labelled 'agent'
 uv run python run.py fix
 
 # Run with secrets from 1Password exposed as environment variables
-op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs
+op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs/error-spikes
 ```
 
-## Scheduling
+## Schedule
 
 Edit your crontab with `crontab -e`:
 
 ```
 # nightly at 2am — use absolute paths; cron has a minimal environment
-0 2 * * * cd ~/path/to/agency && /opt/homebrew/bin/op run --env-file=secrets.env -- ~/.local/bin/uv run python run.py scan agency --type codebase
+0 2 * * * cd ~/path/to/agency && /opt/homebrew/bin/op run --env-file=secrets.env -- ~/.local/bin/uv run python run.py scan my-project --type codebase/dead-code
 ```
 
 Or use GitHub Actions or your favourite other scheduler.
