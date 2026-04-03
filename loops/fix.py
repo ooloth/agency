@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
-IMPLEMENT_TOOLS = ["Bash(git:*)", "Read", "Write", "Edit", "Glob", "Grep"]
+IMPLEMENT_TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 REVIEW_TOOLS = ["Read", "Glob", "Grep"]
 
 
@@ -85,8 +85,10 @@ def run_tests(project_path: Path) -> dict:
     has_tests = (project_path / "tests").exists() or (project_path / "pytest.ini").exists()
     if not has_tests:
         return {"ran": False, "reason": "no test suite found"}
+    venv_python = project_path / ".venv" / "bin" / "python"
+    python = str(venv_python) if venv_python.exists() else "python3"
     result = subprocess.run(
-        ["python3", "-m", "pytest", "--tb=short", "-q"],
+        [python, "-m", "pytest", "--tb=short", "-q"],
         capture_output=True, text=True, cwd=project_path,
     )
     return {
