@@ -71,10 +71,17 @@ only checks whether the required keys are present and truthy.
 ## Project registry rules
 
 **Use `~` not absolute paths.**
-`path` values in `projects.toml` must use `~/...` notation so the config is
+`path` values in `projects.json` must use `~/...` notation so the config is
 machine-agnostic. The coordinator expands `~` at runtime.
 
 **Secrets stay out of config.**
-`projects.toml` holds non-secret config only. Tokens and keys are referenced
+`projects.json` holds non-secret config only. Tokens and keys are referenced
 as env var names (e.g. `"${AXIOM_TOKEN}"`), injected at runtime via
 `op run --env-file=secrets.env`.
+
+**Every scan block must provide `normal`, `flag`, and `ignore`.**
+These are required fields, not optional documentation. They are what the scan
+agent uses to distinguish signal from noise for that specific project. A scan
+block without them will produce low-quality findings regardless of how good
+the prompt is. The schema in `projects.schema.json` enforces their presence —
+do not relax this constraint.

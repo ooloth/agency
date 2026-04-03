@@ -8,11 +8,18 @@ Two loops. One interface between them.
 scan → GitHub issues → fix
 ```
 
-**Scan** runs read-only: queries logs, reads codebases, surfaces anything worth
-acting on, and posts well-formed GitHub issues. **Fix** runs write: picks up
-open issues, implements solutions in fresh agent subprocesses, and opens PRs
-after a review pass. GitHub issues are the handoff — scan and fix are
-deliberately decoupled.
+**Scan** runs read-only: queries logs, reads codebases, or checks whatever
+you configure — surfaces anything worth acting on, and posts well-formed
+GitHub issues. **Fix** runs write: picks up open issues, implements solutions
+in fresh agent subprocesses, and opens PRs after a review pass. GitHub issues
+are the handoff — scan and fix are deliberately decoupled.
+
+The loops are fixed. What varies is the scan configuration. Adding a new scan
+type is adding a prompt file and a scan block in `projects.json`. Each project
+configures each scan type with its own calibration — what's normal, what to
+flag, what to ignore — while the same loop machinery handles orchestration,
+triage, issue drafting, review, and posting for every scan type and every
+project.
 
 ---
 
@@ -25,7 +32,7 @@ uv sync --all-extras
 ## Running
 
 ```bash
-# scan a project for codebase improvements (dry run — prints without posting)
+# scan a project (dry run — prints issues without posting)
 uv run python run.py scan vitals --type codebase --dry-run
 
 # scan and post issues
@@ -73,8 +80,9 @@ validation, and what runs next. All intelligence lives in the prompts.
 ```
 run.py                     entry point: scan | fix
 loops/
-  scan.py                  scan loop coordinator (~70 lines)
-  fix.py                   fix loop coordinator (~60 lines)
+  scan.py                  scan loop coordinator (~50 lines)
+  fix.py                   fix loop coordinator (~85 lines)
+  common/                  shared infrastructure (git, github, agent, projects)
 prompts/
   scans/
     codebase.md            scan type: code quality improvements
@@ -85,24 +93,52 @@ prompts/
   implement.md             implement a fix from an issue
   review.md                review an implementation before PR
 projects/
-  projects.toml            registry: which projects, which scans, data sources
-  <id>/
-    context.md             per-project context: what's normal, what to ignore
+  projects.json            registry: projects, scan configs, data sources
+  projects.schema.json     JSON Schema — documents and enforces required fields
 docs/                      architecture, decisions, philosophy, roadmap
 secrets.env.example        template for 1Password secret references
 ```
 
 ---
 
+## Scan configuration
+
+Each project in `projects.json` declares one or more scan blocks. Each scan
+block carries the context that calibrates the agent to that project:
+
+```json
+{
+  "type": "logs",
+  "source": "axiom",
+  "dataset": "my-app",
+  "token": "${AXIOM_TOKEN}",
+  "normal": ["A few hundred log lines per day during active use"],
+  "flag":   ["Error spike above ~10/hour during off-hours"],
+  "ignore": ["favicon.ico 404 — not a real error"]
+}
+```
+
+`normal`, `flag`, and `ignore` are required on every scan block. They are
+what the scan agent uses to distinguish signal from noise. The schema enforces
+their presence — a scan block without them will fail validation.
+
+Different scan types accept different additional fields (`source`, `dataset`,
+`token` for logs; nothing extra for codebase). See `projects.schema.json` for
+the full contract.
+
+---
+
 ## Extending
 
 **Add a scan type** — create `prompts/scans/<type>.md` following the output
-format contract (see any existing scan prompt). Register it in `projects.toml`
-under the relevant project's `scans` array.
+format contract (see any existing scan prompt). Add a scan block with
+`"type": "<type>"` to the relevant project in `projects.json`, including
+`normal`, `flag`, and `ignore` arrays calibrated for that project.
 
-**Add a project** — add a `[[projects]]` entry to `projects/projects.toml`
-with an `id`, `name`, and `scans` list. Add `projects/<id>/context.md` to
-tell agents what's normal for that project.
+**Add a project** — add an entry to `projects/projects.json` with `id`,
+`name`, and `scans`. Each scan block requires `normal`, `flag`, and `ignore`.
+See `projects.schema.json` for all available fields (`path`, `install`,
+`checks`, `tests`).
 
 **Add a step to a loop** — add one `agent()` call in the relevant coordinator
 function. Pass the previous step's output as context. The new prompt must write

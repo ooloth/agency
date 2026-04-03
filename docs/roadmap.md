@@ -39,8 +39,8 @@
 - [x] Coordinator owns branch lifecycle: dirty-tree check, pull latest,
       create branch, deterministic commit after implement, restore original
       branch on exit, push before PR
-- [x] Per-project install/checks/tests commands in projects.toml; coordinator
-      runs them to verify clean state before starting work
+- [x] Per-project install/checks/tests commands; coordinator runs them to
+      verify clean state before starting work
 - [ ] Staleness scan: new scan type that batch reviews open agent-labelled
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
@@ -50,12 +50,18 @@
       GitHub issues; open question: how to capture the full run transcript
       for the reflection agent to read (tee stdout to a log file?)
 
+### Project config
+
+- [x] Structured scan config in `projects.json`: required `normal`, `flag`,
+      and `ignore` arrays per scan block calibrate the agent to each project's
+      signal and noise; `projects.schema.json` enforces required fields
+- [x] Migrated from `projects.toml` + per-project `context.md` files
+
 ## Phase 2: Schedulable scans
 
-- [ ] launchd job for nightly scan runs
-- [ ] Scan multiple projects and scan types in one run
-- [ ] Per-project context docs for all monitored projects
+- [ ] launchd job for nightly scan runs (cadence stays in cron, not in config)
 - [ ] Log scan prompt (Axiom) validated against real data
+- [ ] Scan multiple projects and scan types in one invocation
 
 ## Phase 3: Trusted fix loop
 
@@ -66,11 +72,19 @@
 - [ ] Agentic review post: after a fix loop run, post a human-readable summary
       of what was attempted, what passed review, what was escalated
 
-## Phase 4: Breadth
+## Phase 4: Scan library
 
-- [ ] Additional scan types: deployments, costs, open PRs, dependency drift
-- [ ] Additional fix types: config changes, dependency updates
-- [ ] Multiple projects registered and scanning cleanly
+The loops are fixed infrastructure. The scan library is what grows. Each new
+scan type is a prompt file + schema-validated config block — no coordinator
+changes required.
+
+- [ ] `staleness` — review open issues against current codebase before fix loop runs
+- [ ] `dependencies` — flag outdated or vulnerable packages
+- [ ] `costs` — flag unexpected spend spikes (cloud, API usage)
+- [ ] `deployments` — flag failed or stalled deploys
+- [ ] `open-prs` — flag PRs that have gone stale or need attention
+- [ ] Per-project backpressure: cap by scan type/label so a noisy daily scan
+      doesn't starve weekly ones
 
 ## Phase 5: Scheduling fix loops
 

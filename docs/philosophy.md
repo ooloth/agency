@@ -55,6 +55,29 @@ manually, or add them by hand. Nothing is hidden in internal state.
 
 ---
 
+## Why scan config is the primary extension point
+
+The loops are fixed infrastructure. What varies — and what makes the system
+useful — is the scan configuration. A scan type is a prompt that defines what
+to look for. A scan block in `projects.json` calibrates that prompt to a
+specific project: what counts as normal, what should become an issue, what is
+known noise to skip.
+
+These two dimensions are independent. You can add a new scan type (a new
+prompt file) without touching any project config. You can add a new project
+without writing any new prompts. And you can tune a project's calibration
+without touching the loop machinery.
+
+The result is a library of scan types that any project can opt into, each
+configured for that project's specific characteristics. A logs scan for one
+project might flag errors above 10/hour; for a high-traffic service, the
+threshold might be 100/hour. The same prompt, different calibration. This
+is why `normal`, `flag`, and `ignore` are required fields — not optional
+documentation. They are the mechanism by which general prompts become
+project-specific intelligence.
+
+---
+
 ## Why prompts are the intellectual property
 
 The coordinator is ~100 lines of Python per loop. Its job is mechanical:
