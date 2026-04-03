@@ -102,7 +102,8 @@ def prepare_branch(issue_number: int, project_path: Path) -> str:
         ["git", "status", "--porcelain"],
         capture_output=True, text=True, check=True, cwd=project_path,
     )
-    if dirty.stdout.strip():
+    tracked_changes = [l for l in dirty.stdout.splitlines() if not l.startswith("??")]
+    if tracked_changes:
         raise RuntimeError(
             f"Working tree in {project_path} is dirty — resolve before running fix loop"
         )
