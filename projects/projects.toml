@@ -19,6 +19,8 @@ id = "vitals"
 name = "Vitals"
 scans = ["codebase"]
 path = "~/Repos/ooloth/vitals"
+install = "uv sync --all-extras --reinstall"
+tests = ".venv/bin/python -m pytest --tb=short -q"
 
 # ── Reference configs (uncomment when credentials are available) ──────────────
 
