@@ -16,12 +16,12 @@ def agent(prompt_file: str, context: str, max_turns: int = 15) -> dict:
         f"Write your JSON output to this file: {output_file}\n"
         f"Do not include the JSON in your text response."
     )
-    print(f"\n{'─' * 60}")
+    print(f"\n{'─' * 60}", flush=True)
     subprocess.run(
         ["claude", "-p", full_prompt, "--max-turns", str(max_turns)],
         cwd=ROOT,
     )
-    print(f"{'─' * 60}\n")
+    print(f"{'─' * 60}", flush=True)
     if not output_file.exists():
         raise RuntimeError(f"Agent did not write output to {output_file}")
     result = json.loads(output_file.read_text())
@@ -65,25 +65,25 @@ def post_issues(issues: list[dict], dry_run: bool = False) -> None:
 def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_run: bool = False) -> None:
     context = project_context(project_id)
 
-    print(f"[scan] {project_id}/{scan_type}: finding problems...")
+    print(f"[scan] {project_id}/{scan_type}: finding problems...", flush=True)
     raw = agent(f"prompts/scans/{scan_type}.md", context)
 
     if not raw.get("findings"):
         print(f"[scan] {project_id}/{scan_type}: nothing to report")
         return
 
-    print(f"[scan] {len(raw['findings'])} finding(s) — triaging...")
+    print(f"[scan] {len(raw['findings'])} finding(s) — triaging...", flush=True)
     clustered = agent("prompts/triage.md", json.dumps(raw))
 
     if not clustered.get("clusters"):
         print(f"[scan] {project_id}/{scan_type}: no actionable clusters after triage")
         return
 
-    print(f"[scan] {len(clustered['clusters'])} cluster(s) — drafting issues...")
+    print(f"[scan] {len(clustered['clusters'])} cluster(s) — drafting issues...", flush=True)
     drafted = agent("prompts/draft-issues.md", json.dumps(clustered))
 
     for round_n in range(max_rounds):
-        print(f"[scan] reviewing issues (round {round_n + 1})...")
+        print(f"[scan] reviewing issues (round {round_n + 1})...", flush=True)
         reviewed = agent("prompts/review-issues.md", json.dumps(drafted))
         if reviewed["ready"]:
             post_issues(reviewed["issues"], dry_run=dry_run)
