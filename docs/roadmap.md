@@ -56,6 +56,12 @@
       and `ignore` arrays per scan block calibrate the agent to each project's
       signal and noise; `projects.schema.json` enforces required fields
 - [x] Migrated from `projects.toml` + per-project `context.md` files
+- [ ] Replace hand-authored `projects.schema.json` with Pydantic models:
+      define `Project`, `LogsScan`, `CodebaseScan` models; parse through them
+      in `load_project()` for typed access and load-time validation; generate
+      `projects.schema.json` from `model_json_schema()` so editors keep their
+      schema file but there is only one source of truth; delete the
+      hand-authored schema
 
 ## Phase 2: Schedulable scans
 
