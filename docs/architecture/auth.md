@@ -1,11 +1,11 @@
 # Auth Strategies by Provider
 
-Vitals runs locally as a single-user app. Auth is handled at the process level via
-`op run --env-file=secrets.env -- next dev`, which injects secrets as env vars before
-the app starts. The app itself never handles user auth.
+Vitals runs locally as a CLI tool. Auth is handled at the process level via
+`op run --env-file=secrets.env -- python run.py <cmd>`, which injects secrets
+as env vars before the process starts. No secrets are stored on disk or in code.
 
 Non-secret params (project IDs, base URLs, datasource UIDs, log selectors) are stored
-plainly in `vitals.config.toml`. Only tokens and keys go in `secrets.env`.
+plainly in `projects/projects.toml`. Only tokens and keys go in `secrets.env`.
 
 ---
 
@@ -25,13 +25,14 @@ For local use, #2 applies. Run once:
 gcloud auth application-default login
 ```
 
-After that, all GCP client libraries (including the Node.js `@google-cloud/logging`
-package) authenticate transparently. No token in config, no env var needed.
+After that, the `gcloud logging read` command used by the scan agent authenticates
+transparently. No token in config, no env var needed.
 
 **Config**: only non-secret params required.
 
 ```toml
-[projects.panels.params]
+[[projects.logs]]
+source = "google_cloud_logging"
 project_id = "my-gcp-project-123"   # not a secret
 # log_name = "projects/my-project/logs/app"  # optional filter
 ```
@@ -65,11 +66,12 @@ GRAFANA_TOKEN=op://Work/Grafana/token
 Config references the env var for the token, stores everything else plainly:
 
 ```toml
-[projects.panels.params]
-base_url    = "https://grafana.yourcompany.com"
+[[projects.logs]]
+source = "grafana_loki"
+base_url = "https://grafana.yourcompany.com"
 datasource_uid = "abc123"
-selector    = '{app="my-api", env="prod"}'
-token       = "${GRAFANA_TOKEN}"
+selector = '{app="my-api", env="prod"}'
+token = "${GRAFANA_TOKEN}"
 ```
 
 ### Case B: Anonymous / network-trusted access
@@ -77,10 +79,11 @@ token       = "${GRAFANA_TOKEN}"
 No token needed. Just the base URL and datasource details in config.
 
 ```toml
-[projects.panels.params]
-base_url       = "https://grafana.yourcompany.com"
+[[projects.logs]]
+source = "grafana_loki"
+base_url = "https://grafana.yourcompany.com"
 datasource_uid = "abc123"
-selector       = '{app="my-api", env="prod"}'
+selector = '{app="my-api", env="prod"}'
 ```
 
 ### How to determine which case applies
