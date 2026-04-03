@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["projects"],
+  "additionalProperties": false,
+  "properties": {
+    "projects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/project" }
+    }
+  },
+  "$defs": {
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "scans"],
+      "additionalProperties": false,
+      "properties": {
+        "id":      { "type": "string", "description": "Unique identifier used in CLI commands" },
+        "name":    { "type": "string", "description": "Human-readable display name" },
+        "path":    { "type": "string", "description": "Absolute or ~ path to the project root (required for codebase scans and fix loop)" },
+        "install": { "type": "string", "description": "Command to install/sync dependencies before running the fix loop" },
+        "checks":  { "type": "string", "description": "Command to run linters/type checkers before running the fix loop" },
+        "tests":   { "type": "string", "description": "Command to run the test suite" },
+        "scans":   {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/logs_scan" },
+              { "$ref": "#/$defs/codebase_scan" }
+            ]
+          }
+        }
+      }
+    },
+    "scan_base": {
+      "type": "object",
+      "required": ["type", "normal", "flag", "ignore"],
+      "properties": {
+        "type":   { "type": "string" },
+        "normal": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "What healthy baseline looks like — helps the agent ignore noise"
+        },
+        "flag": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Conditions or patterns that should become issues"
+        },
+        "ignore": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Known noise patterns to skip — can be empty"
+        }
+      }
+    },
+    "logs_scan": {
+      "allOf": [
+        { "$ref": "#/$defs/scan_base" },
+        {
+          "type": "object",
+          "required": ["type", "source", "dataset", "token"],
+          "additionalProperties": false,
+          "properties": {
+            "type":    { "const": "logs" },
+            "source":  { "type": "string", "enum": ["axiom", "google_cloud_logging", "grafana_loki"] },
+            "dataset": { "type": "string" },
+            "token":   { "type": "string", "description": "Env var reference e.g. ${AXIOM_TOKEN}" },
+            "normal":  {},
+            "flag":    {},
+            "ignore":  {}
+          }
+        }
+      ]
+    },
+    "codebase_scan": {
+      "allOf": [
+        { "$ref": "#/$defs/scan_base" },
+        {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type":   { "const": "codebase" },
+            "normal": {},
+            "flag":   {},
+            "ignore": {}
+          }
+        }
+      ]
+    }
+  }
+}

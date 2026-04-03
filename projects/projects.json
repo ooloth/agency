@@ -1,0 +1,56 @@
+{
+  "projects": [
+    {
+      "id": "pilots",
+      "name": "Pilots",
+      "scans": [
+        {
+          "type": "logs",
+          "source": "axiom",
+          "dataset": "pilots",
+          "token": "${AXIOM_TOKEN}",
+          "normal": [
+            "A few hundred log lines per day during active use",
+            "Auth errors from unauthenticated external probes are expected",
+            "Background sync jobs run nightly; slow queries there are normal"
+          ],
+          "flag": [
+            "Error spike above ~10/hour during off-hours",
+            "Auth failures from known internal IPs — would indicate a real issue",
+            "Database connection errors — pool exhaustion has happened before"
+          ],
+          "ignore": [
+            "probe: unknown route — bots, not users",
+            "favicon.ico 404 — not a real error"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vitals",
+      "name": "Vitals",
+      "path": "~/Repos/ooloth/vitals",
+      "install": "uv sync --all-extras --reinstall",
+      "tests": "uv run -m pytest --tb=short -q",
+      "scans": [
+        {
+          "type": "codebase",
+          "normal": [
+            "Python coordinator delegates all LLM work to claude -p subprocesses",
+            "loops/common/ holds shared infrastructure; fix.py and scan.py are pure orchestration",
+            "No web framework, no database — CLI only"
+          ],
+          "flag": [
+            "subprocess.run calls outside loops/common/ that should use the git() or gh() dispatcher",
+            "Agent steps with no --allowedTools restriction",
+            "Missing test coverage for coordinator branching logic"
+          ],
+          "ignore": [
+            "docs/ is intentionally informal — absence of docstrings there is not a gap",
+            "prompts/ are markdown, not code — style inconsistencies there are not findings"
+          ]
+        }
+      ]
+    }
+  ]
+}

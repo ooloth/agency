@@ -1,27 +1,37 @@
+import json
 import shlex
 import subprocess
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
 
 
 def load_project(project_id: str) -> dict:
-    config = tomllib.loads((ROOT / "projects/projects.toml").read_text())
+    config = json.loads((ROOT / "projects/projects.json").read_text())
     project = next((p for p in config["projects"] if p["id"] == project_id), None)
     if project is None:
-        raise ValueError(f"Project '{project_id}' not found in projects.toml")
+        raise ValueError(f"Project '{project_id}' not found in projects.json")
     if "path" in project:
         project["path"] = str(Path(project["path"]).expanduser().resolve())
     return project
 
 
-def project_context(project_id: str) -> str:
-    import json
-    project = load_project(project_id)
-    context_path = ROOT / f"projects/{project_id}/context.md"
-    context = context_path.read_text() if context_path.exists() else ""
-    return f"Project config:\n{json.dumps(project, indent=2)}\n\nProject context:\n{context}"
+def scan_context(project: dict, scan: dict) -> str:
+    meta = {k: v for k, v in project.items() if k != "scans"}
+    lines = [
+        f"Project: {project['name']}",
+        f"Config: {json.dumps(meta, indent=2)}",
+        "",
+        "What is normal for this scan:",
+        *[f"- {item}" for item in scan["normal"]],
+        "",
+        "What to flag:",
+        *[f"- {item}" for item in scan["flag"]],
+        "",
+        "What to ignore:",
+        *[f"- {item}" for item in scan["ignore"]],
+    ]
+    return "\n".join(lines)
 
 
 def run_command(cmd: str, project_path: Path, label: str) -> None:

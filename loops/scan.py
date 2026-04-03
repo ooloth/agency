@@ -1,7 +1,7 @@
 import json
 import sys
 
-from loops.common import agent, load_project, post_issues, project_context, open_issue_titles
+from loops.common import agent, load_project, open_issue_titles, post_issues, scan_context
 
 BACKPRESSURE_CAP = 10
 
@@ -12,7 +12,12 @@ def run_scan(project_id: str, scan_type: str = "logs", max_rounds: int = 5, dry_
         if open_count >= BACKPRESSURE_CAP:
             print(f"[scan] {open_count} open issues pending fix — skipping scan (backpressure cap: {BACKPRESSURE_CAP})")
             return
-    context = project_context(project_id)
+
+    project = load_project(project_id)
+    scan = next((s for s in project["scans"] if s["type"] == scan_type), None)
+    if scan is None:
+        raise ValueError(f"Project '{project_id}' has no '{scan_type}' scan configured")
+    context = scan_context(project, scan)
 
     print(f"[scan] {project_id}/{scan_type}: finding problems...", flush=True)
     raw = agent(f"prompts/scans/{scan_type}.md", context)
