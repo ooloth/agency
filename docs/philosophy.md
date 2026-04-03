@@ -3,7 +3,7 @@
 ## The dream
 
 A horde of agents who know what to do and validate each other's work better
-than a team of humans would. They run unattended. They find real problems,
+than a team of humans would. They run unattended. They find real opportunities,
 write actionable issues, implement correct fixes, and open PRs that pass
 review. The human reviews a PR occasionally — not a conversation at every step.
 

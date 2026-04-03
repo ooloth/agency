@@ -7,8 +7,8 @@
 > Use at your own risk.
 
 Agency is a base of operations for the projects you maintain — a command center from which you scan
-for problems, triage findings, and fix issues across codebases you don't live in. You configure
-projects into it; your effects land in their repos as issues and PRs.
+for issues, triage findings, and implement fixes. You register projects and their monitoring use
+cases here, and your effects land in those projects as issues and PRs.
 
 ```mermaid
 flowchart LR
@@ -27,8 +27,8 @@ flowchart LR
 
 ## How it works
 
-- **Scan runs are read-only**: they query logs, read codebases, or check whatever else you configure
-  — they surface anything worth acting on and post well-formed GitHub issues
+- **Scan runs read**: they query logs, read codebases, or check whatever else you configure
+  — they analyze what they see and propose worthwhile actions by posting well-formed GitHub issues
 - **Fix runs write**: they pick up open issues, implement solutions in fresh agent subprocesses,
   and open PRs after a review pass — GitHub issues are the handoff mechanism, so scan and fix run
   on independent schedules
