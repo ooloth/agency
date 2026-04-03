@@ -4,6 +4,7 @@
   "required": ["projects"],
   "additionalProperties": false,
   "properties": {
+    "$schema": { "type": "string" },
     "projects": {
       "type": "array",
       "items": { "$ref": "#/$defs/project" }

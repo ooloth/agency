@@ -1,4 +1,5 @@
 {
+  "$schema": "./projects.schema.json",
   "projects": [
     {
       "id": "pilots",
