@@ -30,5 +30,5 @@ op run --env-file=secrets.env -- python3 run.py scan <project-id>
 | Auth strategies by provider                     | `docs/architecture/auth.md` |
 | How to add projects, scan types, debug failures | `docs/playbooks/README.md`  |
 | Discoveries from running the loops              | `docs/learnings/README.md`  |
-| Registered projects and data sources            | `projects/projects.toml`    |
+| Registered projects and data sources            | `projects/projects.json`    |
 | Open issues to fix                              | `gh issue list`             |
