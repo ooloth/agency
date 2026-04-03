@@ -10,24 +10,24 @@
 
 ### Prompt quality (from agency audit)
 
-- [ ] Rewrite `draft-issues.md` with three-section structure:
+- [x] Rewrite `draft-issues.md` with three-section structure:
       Problem (description + inline snippet) / Definition of done (outside-in
       observable proof, not exhaustive) / Out of scope
-- [ ] Port adversarial review rubric into `review.md`: five-point ordered
+- [x] Port adversarial review rubric into `review.md`: five-point ordered
       checklist (Approach → Correctness → Regressions → Edge Cases →
       Completeness); approach-first gate ("if approach is wrong, stop here");
       proportionality rule; structured LGTM/CONCERNS verdict with required
       "Required Changes" section; explicit anti-rubber-stamp instruction
-- [ ] Port fix prompt wording into `implement.md`: "minimal changes needed",
+- [x] Port fix prompt wording into `implement.md`: "minimal changes needed",
       "prefer simplest solution, avoid problems rather than handle them",
       "line numbers are hints only — locate by symbol name"
 
 ### Scan loop reliability
 
-- [ ] Add issue deduplication: before posting, check for existing open issues
-      with matching title via `gh issue list --search`; start with title match,
-      later grow to reading descriptions and posting as comment on duplicate
-- [ ] Add backpressure check: if open `agent`-labelled issues exceed a cap,
+- [x] Add issue deduplication: before posting, check for existing open issues
+      with matching title; start with title match, later grow to reading
+      descriptions and posting as comment on duplicate
+- [x] Add backpressure check: if open `agent`-labelled issues exceed a cap,
       skip the scan run rather than piling on more issues the fix loop hasn't
       cleared yet (lives inside scan coordinator, scheduled externally via launchd)
 
