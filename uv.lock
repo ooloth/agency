@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 
 [[package]]
 name = "colorama"
@@ -141,25 +141,20 @@ name = "vitals"
 version = "0.1.0"
 source = { virtual = "." }
 
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "prek" },
+    { name = "pytest" },
     { name = "ruff" },
     { name = "ty" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pytest", marker = "extra == 'dev'" }]
-provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "prek", specifier = ">=0.3.8" },
+    { name = "pytest", specifier = ">=9.0.2" },
     { name = "ruff", specifier = ">=0.15.9" },
     { name = "ty", specifier = ">=0.0.28" },
 ]

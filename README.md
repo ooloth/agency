@@ -25,11 +25,9 @@ project.
 
 ## Setup
 
-```bash
-uv sync --all-extras
-```
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Running
+## Usage
 
 ```bash
 # scan a project (dry run — prints issues without posting)
@@ -113,7 +111,7 @@ block carries the context that calibrates the agent to that project:
   "dataset": "my-app",
   "token": "${AXIOM_TOKEN}",
   "normal": ["A few hundred log lines per day during active use"],
-  "flag":   ["Error spike above ~10/hour during off-hours"],
+  "flag": ["Error spike above ~10/hour during off-hours"],
   "ignore": ["favicon.ico 404 — not a real error"]
 }
 ```
@@ -153,7 +151,7 @@ point, not the ceiling.
 ## What not to do
 
 - Don't add business logic to the coordinator. If you find yourself writing
-  conditional logic that interprets the *content* of agent output (beyond
+  conditional logic that interprets the _content_ of agent output (beyond
   checking `ready` or `approved`), it belongs in a prompt.
 
 - Don't add a web UI, API layer, or database. This is a local tool that runs
@@ -166,13 +164,3 @@ point, not the ceiling.
 
 - Don't have agents output to stdout and parse the text. Agents write JSON to
   a file. The coordinator reads the file. This is the handoff contract.
-
----
-
-## Prerequisites
-
-- `uv` (`brew install uv`) — manages the Python environment and dependencies
-- `claude` CLI (`npm install -g @anthropic-ai/claude-code`)
-- `gh` CLI (GitHub issues and PRs)
-- `op` CLI (1Password, for secrets injection)
-- A GitHub repo for each project you want the fix loop to operate on
