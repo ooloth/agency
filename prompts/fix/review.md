@@ -82,10 +82,13 @@ If your verdict is CONCERNS, add:
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 ```json
 {
   "approved": true,
-  "feedback": ""
+  "feedback": "",
+  "reflections": []
 }
 ```
 
@@ -94,6 +97,7 @@ If not approved:
 ```json
 {
   "approved": false,
-  "feedback": "copy of the Required changes section verbatim"
+  "feedback": "copy of the Required changes section verbatim",
+  "reflections": []
 }
 ```

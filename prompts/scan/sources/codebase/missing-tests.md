@@ -28,6 +28,8 @@ Cross-reference against the main source files to find gaps.
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 ```json
 {
   "findings": [
@@ -38,8 +40,9 @@ Write your output as JSON to the file path provided by the coordinator.
       "severity": "high | medium | low",
       "sample": "the untested code path verbatim"
     }
-  ]
+  ],
+  "reflections": []
 }
 ```
 
-If nothing worth flagging is found, return `{ "findings": [] }`.
+If nothing worth flagging is found, return `{ "findings": [], "reflections": [] }`.

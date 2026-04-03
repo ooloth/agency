@@ -50,6 +50,8 @@ cryptic JSONDecodeError" is better than "Add check=True to subprocess calls."
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 ```json
 {
   "issues": [
@@ -58,7 +60,8 @@ Write your output as JSON to the file path provided by the coordinator.
       "body": "markdown body following the three-section structure above",
       "label": "sev:critical | sev:high | sev:medium | sev:low"
     }
-  ]
+  ],
+  "reflections": []
 }
 ```
 

@@ -32,6 +32,8 @@ hasn't read the body.
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 If all issues pass:
 
 ```json
@@ -43,7 +45,8 @@ If all issues pass:
       "body": "...",
       "label": "..."
     }
-  ]
+  ],
+  "reflections": []
 }
 ```
 
@@ -60,6 +63,7 @@ If any issue fails:
       "label": "...",
       "note": "which rule failed and why, for this specific issue"
     }
-  ]
+  ],
+  "reflections": []
 }
 ```

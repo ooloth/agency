@@ -24,12 +24,15 @@ You will receive a GitHub issue and a branch name. Your job is to:
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 ```json
 {
   "branch": "fix/issue-42",
   "pr_title": "fix: <short description>",
   "pr_body": "markdown — what changed and why, closes #<number>",
   "confidence": "high | medium | low",
-  "notes": "anything the reviewer should know"
+  "notes": "anything the reviewer should know",
+  "reflections": []
 }
 ```

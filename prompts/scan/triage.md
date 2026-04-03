@@ -15,6 +15,8 @@ You will receive a JSON array of raw findings from a log scan. Your job is to:
 
 Write your output as JSON to the file path provided by the coordinator.
 
+Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+
 ```json
 {
   "clusters": [
@@ -28,8 +30,9 @@ Write your output as JSON to the file path provided by the coordinator.
       "worsening": false,
       "findings": ["pattern strings that were merged into this cluster"]
     }
-  ]
+  ],
+  "reflections": []
 }
 ```
 
-If there is nothing actionable, return `{ "clusters": [] }`.
+If there is nothing actionable, return `{ "clusters": [], "reflections": [] }`.
