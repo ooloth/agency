@@ -42,21 +42,32 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## Usage
 
 ```bash
-# scan a project (dry run — prints issues without posting)
+# Scan a project (dry run — prints issues without posting)
 uv run python run.py scan agency --type codebase --dry-run
 
-# scan and post issues
+# Scan a project and post issues
 uv run python run.py scan agency --type codebase
 
-# fix a specific issue in a specific project
+# Fix a specific issue in a specific project
 uv run python run.py fix --issue 3 --project agency
 
-# fix the next open issue labelled 'agent'
+# Fix the next open issue labelled 'agent'
 uv run python run.py fix
 
-# with secrets from 1Password
+# Run with secrets from 1Password exposed as environment variables
 op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs
 ```
+
+## Scheduling
+
+Edit your crontab with `crontab -e`:
+
+```
+# nightly at 2am — use absolute paths; cron has a minimal environment
+0 2 * * * cd ~/path/to/agency && /opt/homebrew/bin/op run --env-file=secrets.env -- ~/.local/bin/uv run python run.py scan agency --type codebase
+```
+
+Or use GitHub Actions or your favourite other scheduler.
 
 ---
 
