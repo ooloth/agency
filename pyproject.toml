@@ -8,6 +8,7 @@ dev = ["pytest"]
 
 [dependency-groups]
 dev = [
+    "prek>=0.3.8",
     "ruff>=0.15.9",
     "ty>=0.0.28",
 ]
