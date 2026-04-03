@@ -23,12 +23,12 @@ op run --env-file=secrets.env -- python3 run.py scan <project-id>
 
 | What                                            | Where                       |
 | ----------------------------------------------- | --------------------------- |
-| Philosophy and goals                            | `docs/philosophy.md`        |
-| Invariants to uphold                            | `docs/rules.md`             |
-| Design decisions                                | `docs/decisions.md`         |
-| Roadmap                                         | `docs/roadmap.md`           |
-| Auth strategies by provider                     | `docs/architecture/auth.md` |
-| How to add projects, scan types, debug failures | `docs/playbooks/README.md`  |
-| Discoveries from running the loops              | `docs/learnings/README.md`  |
-| Registered projects and data sources            | `projects/projects.json`    |
-| Open issues to fix                              | `gh issue list`             |
+| Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)               |
+| Invariants to uphold                            | [docs/rules.md](docs/rules.md)                         |
+| Design decisions                                | [docs/decisions/](docs/decisions/)                     |
+| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
+| Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
+| How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
+| Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
+| Registered projects and data sources            | [projects/projects.json](projects/projects.json)       |
+| Open issues to fix                              | `gh issue list`                                        |

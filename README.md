@@ -75,7 +75,7 @@ signal and noise rather than relying on generic heuristics.
 2. Add a matching scan block (with `type`, `normal`, `flag`, `ignore`) to the project in
    `projects.json`
 
-See `docs/playbooks/` for step-by-step instructions.
+See [docs/playbooks/](docs/playbooks/) for step-by-step instructions.
 
 ## Run
 
@@ -113,10 +113,10 @@ Or use GitHub Actions or your favourite other scheduler.
 
 | What                                            | Where                       |
 | ----------------------------------------------- | --------------------------- |
-| Philosophy and goals                            | `docs/philosophy.md`        |
-| Design decisions                                | `docs/decisions/`           |
-| Invariants to uphold                            | `docs/rules.md`             |
-| Discoveries from running the loops              | `docs/learnings/`           |
-| How to add projects, scan types, debug failures | `docs/playbooks/`           |
-| Auth strategies by provider                     | `docs/architecture/auth.md` |
-| Roadmap                                         | `docs/roadmap.md`           |
+| Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)               |
+| Design decisions                                | [docs/decisions/](docs/decisions/)                     |
+| Invariants to uphold                            | [docs/rules.md](docs/rules.md)                         |
+| Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
+| How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
+| Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
+| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
