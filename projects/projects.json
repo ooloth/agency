@@ -43,16 +43,26 @@
           ]
         },
         {
+          "type": "codebase/module-cohesion",
+          "normal": [
+            "loops/common/ is a shared package — public exports in __init__.py are intentionally general-purpose",
+            "Private helpers (underscore prefix) inside domain modules are expected and correct"
+          ],
+          "flag": [
+            "Public functions whose names contain domain vocabulary matching another module (e.g. 'retrospective', 'scan', 'fix') and whose only caller is that domain module"
+          ],
+          "ignore": []
+        },
+        {
           "type": "codebase/dead-code",
           "normal": [
-            "Python coordinator delegates all LLM work to claude -p subprocesses",
-            "loops/common/ holds shared infrastructure; fix.py and scan.py are pure orchestration",
-            "No web framework, no database — CLI only"
+            "Python loop coordinator delegates all LLM work to claude -p subprocesses",
+            "loops/common/ holds shared infrastructure; fix.py and scan.py are pure orchestration"
           ],
           "flag": [
             "subprocess.run calls outside loops/common/ that should use the git() or gh() dispatcher",
             "Agent steps with no --allowedTools restriction",
-            "Missing test coverage for coordinator branching logic"
+            "Missing test coverage for loop coordinator branching logic"
           ],
           "ignore": [
             "docs/ is intentionally informal — absence of docstrings there is not a gap",
