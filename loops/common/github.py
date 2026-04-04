@@ -8,9 +8,9 @@ Does not belong here: domain logic tied to a specific loop or agent
 (e.g. retrospective findings, reflection issue queries).
 """
 
+import functools
 import json
-import os
-import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -18,15 +18,26 @@ from loops.common.git import git
 from loops.common.logging import log
 
 
+@functools.cache
+def _gh_path() -> str:
+    """Return the absolute path to the gh CLI, raising if not installed."""
+    path = shutil.which("gh")
+    if not path:
+        msg = "gh CLI not found in PATH"
+        raise RuntimeError(msg)
+    return path
+
+
 def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
     """Run a gh CLI command with the given arguments."""
-    env = {**os.environ, "_GH_ARGS": shlex.join(args)}
-    return subprocess.run(
-        ["/bin/sh", "-c", "eval gh $_GH_ARGS"],
+    # S603 fires on any subprocess.run call regardless of arguments — there is no
+    # code pattern that satisfies it while still using subprocess. All args here
+    # are string literals from internal call sites, never from untrusted user input.
+    return subprocess.run(  # noqa: S603
+        [_gh_path(), *args],
         capture_output=capture,
         text=True,
         check=check,
-        env=env,
     )
 
 
