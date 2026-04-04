@@ -35,6 +35,14 @@
       "test": "uv run pytest --tb=short -q",
       "scans": [
         {
+          "type": "codebase/stale-docs",
+          "normal": [],
+          "flag": [],
+          "ignore": [
+            "docs/learnings/README.md 'not yet implemented' note — learnings file population is intentionally deferred to Phase 2"
+          ]
+        },
+        {
           "type": "codebase/dead-code",
           "normal": [
             "Python coordinator delegates all LLM work to claude -p subprocesses",

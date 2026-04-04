@@ -57,13 +57,11 @@
         },
         "normal": {
           "type": "array",
-          "minItems": 1,
           "items": { "type": "string" },
           "description": "What healthy baseline looks like — helps the agent ignore noise"
         },
         "flag": {
           "type": "array",
-          "minItems": 1,
           "items": { "type": "string" },
           "description": "Conditions or patterns that should become issues"
         },
