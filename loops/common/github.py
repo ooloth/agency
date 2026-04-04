@@ -91,13 +91,27 @@ def comment_on_issue(issue_number: int, body: str) -> None:
     gh("issue", "comment", str(issue_number), "--body", body, capture=False)
 
 
+def ensure_label(name: str, color: str = "0075ca", description: str = "") -> None:
+    """Create the label if it doesn't already exist in the repo."""
+    result = gh("label", "list", "--json", "name")
+    existing = {label["name"] for label in json.loads(result.stdout)}
+    if name not in existing:
+        args = ["label", "create", name, "--color", color]
+        if description:
+            args += ["--description", description]
+        gh(*args, capture=False)
+
+
 def post_reflection_findings(findings: list[dict]) -> None:
     """Open new issues or comment on existing ones from retrospective findings."""
     for finding in findings:
         if finding.get("action") == "comment":
             comment_on_issue(finding["issue_number"], finding["body"])
         else:
-            labels = ",".join(finding.get("labels", ["agent-reflection"]))
+            label_list = finding.get("labels", ["agent-reflection"])
+            for label in label_list:
+                ensure_label(label)
+            labels = ",".join(label_list)
             gh(
                 "issue",
                 "create",
