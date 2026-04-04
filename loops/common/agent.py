@@ -24,8 +24,8 @@ def _print_event(event: dict) -> None:
     if etype == "assistant":
         for block in event.get("message", {}).get("content", []):
             btype = block.get("type")
-            if btype == "text":
-                sys.stdout.write(block["text"])
+            if btype in ("text", "thinking"):
+                sys.stdout.write(block.get("text") or block.get("thinking", ""))
                 sys.stdout.flush()
             elif btype == "tool_use":
                 name = block.get("name", "?")
@@ -96,6 +96,10 @@ def agent(
     if not output_file.exists():
         msg = f"Agent did not write output to {output_file}"
         raise RuntimeError(msg)
-    result = json.loads(output_file.read_text())
+    text = output_file.read_text().strip()
     output_file.unlink()
-    return result
+    if text.startswith("```"):
+        lines = text.splitlines()
+        end = next((i for i in range(len(lines) - 1, 0, -1) if lines[i].strip() == "```"), None)
+        text = "\n".join(lines[1:end] if end else lines[1:])
+    return json.loads(text)
