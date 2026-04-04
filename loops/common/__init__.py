@@ -9,9 +9,7 @@ from loops.common.github import (
     next_open_issue,
     open_issue_titles,
     open_pr,
-    open_reflection_issues,
     post_issues,
-    post_reflection_findings,
 )
 from loops.common.logging import log
 from loops.common.logs import make_run_dir, recent_run_dirs, write_step
@@ -43,9 +41,7 @@ __all__ = [
     "next_open_issue",
     "open_issue_titles",
     "open_pr",
-    "open_reflection_issues",
     "post_issues",
-    "post_reflection_findings",
     "prepare_branch",
     "project_context",
     "recent_run_dirs",

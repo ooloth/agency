@@ -1,4 +1,12 @@
-"""GitHub CLI subprocess wrapper and issue/PR helpers."""
+"""General-purpose GitHub CLI primitives: gh wrapper, issue/label/PR helpers.
+
+Belongs here: thin wrappers around gh commands usable by any loop or
+module (gh, create_issue, add_label, ensure_label, comment_on_issue,
+open_pr, issue_context, open_issue_titles, next_open_issue, post_issues).
+
+Does not belong here: domain logic tied to a specific loop or agent
+(e.g. retrospective findings, reflection issue queries).
+"""
 
 import json
 import os
@@ -58,25 +66,6 @@ def post_issues(issues: list[dict], *, dry_run: bool = False) -> None:
             create_issue(title, issue["body"], [label])
 
 
-def open_reflection_issues() -> list[dict]:
-    """Return open agent-reflection issues (number, title, truncated body)."""
-    result = gh(
-        "issue",
-        "list",
-        "--label",
-        "agent-reflection",
-        "--json",
-        "number,title,body",
-        "--limit",
-        "50",
-    )
-    issues = json.loads(result.stdout)
-    return [
-        {"number": i["number"], "title": i["title"], "body_excerpt": i["body"][:300]}
-        for i in issues
-    ]
-
-
 def comment_on_issue(issue_number: int, body: str) -> None:
     """Post a comment on an existing GitHub issue."""
     gh("issue", "comment", str(issue_number), "--body", body, capture=False)
@@ -114,19 +103,6 @@ def add_label(issue_number: int, label: str) -> None:
     """Ensure the label exists, then apply it to an existing issue."""
     ensure_label(label)
     gh("issue", "edit", str(issue_number), "--add-label", label, capture=False)
-
-
-def post_reflection_findings(findings: list[dict]) -> None:
-    """Open new issues or comment on existing ones from retrospective findings."""
-    for finding in findings:
-        if finding.get("action") == "comment":
-            comment_on_issue(finding["issue_number"], finding["body"])
-        else:
-            create_issue(
-                finding["title"],
-                finding["body"],
-                finding.get("labels", ["agent-reflection"]),
-            )
 
 
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:
