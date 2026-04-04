@@ -21,6 +21,7 @@ from loops.common import (
     open_reflection_issues,
     post_reflection_findings,
     prepare_branch,
+    project_context,
     recent_run_dirs,
     run_command,
     run_tests,
@@ -29,6 +30,12 @@ from loops.common import (
 
 IMPLEMENT_TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 REVIEW_TOOLS = ["Read", "Glob", "Grep"]
+
+
+def _with_project_ctx(data: dict, ctx: str) -> str:
+    """Serialise data as JSON, prepending project context if present."""
+    payload = json.dumps(data)
+    return f"{ctx}\n\n{payload}" if ctx else payload
 
 
 @dataclasses.dataclass
@@ -116,11 +123,10 @@ def run_fix(
 
     try:
         branch = prepare_branch(issue_number, project_path)
-        issue = json.dumps(
-            {
-                "issue": json.loads(issue_context(issue_number)),
-                "branch": branch,
-            }
+        proj_ctx = project_context(project)
+        issue = _with_project_ctx(
+            {"issue": json.loads(issue_context(issue_number)), "branch": branch},
+            proj_ctx,
         )
 
         for round_n in range(max_rounds):
@@ -142,7 +148,7 @@ def run_fix(
                     round_n + 1,
                     branch,
                 )
-                issue = json.dumps(
+                issue = _with_project_ctx(
                     {
                         "issue": json.loads(issue_context(issue_number)),
                         "branch": branch,
@@ -150,19 +156,21 @@ def run_fix(
                             f"Branch {branch!r} has no diff against the base branch."
                             " You must make changes and ensure they are committed."
                         ),
-                    }
+                    },
+                    proj_ctx,
                 )
                 continue
 
             tests = run_tests(project_path, project.get("tests"))
 
-            review_context = json.dumps(
+            review_context = _with_project_ctx(
                 {
                     "issue": json.loads(issue_context(issue_number)),
                     "implementation": impl,
                     "diff": diff,
                     "tests": tests,
-                }
+                },
+                proj_ctx,
             )
 
             log.info("[fix] round %s: reviewing...", round_n + 1)
@@ -181,12 +189,13 @@ def run_fix(
                 return
 
             log.info("[fix] round %s: revision needed — %s", round_n + 1, reviewed["feedback"])
-            issue = json.dumps(
+            issue = _with_project_ctx(
                 {
                     "issue": json.loads(issue_context(issue_number)),
                     "branch": branch,
                     "feedback": reviewed["feedback"],
-                }
+                },
+                proj_ctx,
             )
 
         log.error(

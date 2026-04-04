@@ -22,22 +22,30 @@ def load_project(project_id: str) -> dict:
     return project
 
 
+def project_context(project: dict) -> str:
+    """Return the content of docs/projects/<id>.md if it exists, else empty string."""
+    project_id = project.get("id", "")
+    if not project_id:
+        return ""
+    path = ROOT / "docs" / "projects" / f"{project_id}.md"
+    return path.read_text().strip() if path.exists() else ""
+
+
 def scan_context(project: dict, scan: dict) -> str:
     """Build a plain-text context string describing what to scan and how to interpret it."""
     meta = {k: v for k, v in project.items() if k != "scans"}
     lines = [
         f"Project: {project['name']}",
         f"Config: {json.dumps(meta, indent=2)}",
-        "",
-        "What is normal for this scan:",
-        *[f"- {item}" for item in scan["normal"]],
-        "",
-        "What to flag:",
-        *[f"- {item}" for item in scan["flag"]],
-        "",
-        "What to ignore:",
-        *[f"- {item}" for item in scan["ignore"]],
     ]
+    if ctx := project_context(project):
+        lines += ["", ctx]
+    if normal := scan.get("normal"):
+        lines += ["", "What is normal for this scan:", *[f"- {item}" for item in normal]]
+    if flag := scan.get("flag"):
+        lines += ["", "What to flag:", *[f"- {item}" for item in flag]]
+    if ignore := scan.get("ignore"):
+        lines += ["", "What to ignore:", *[f"- {item}" for item in ignore]]
     return "\n".join(lines)
 
 
