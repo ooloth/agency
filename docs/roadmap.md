@@ -59,35 +59,13 @@
       issues against the current codebase, comments and closes stale ones
       before the fix loop picks them up (`--type staleness`)
 - [ ] Local branch cleanup after PR is merged (roadmap only — manual for now)
-- [ ] **Harness self-improvement** (high priority): after each scan or fix run,
-      a reflection step reads the run transcript and appends dated learning
-      entries to `docs/learnings/`. When a class of mistake appears three or
-      more times, the reflection agent proposes an escalation — a change to a
-      prompt, a new rule in `docs/rules.md`, or a new convention — as a GitHub
-      issue for human review before being applied. Auto-applying changes to
-      agent instructions without human review has been shown to hurt
-      performance. At the start of each run, the coordinator injects relevant
-      learnings into the prompt so agents benefit from past observations.
-
-      **What the reflection agent needs:**
-      - The full run transcript (stdout + stderr). Current approach: tee the
-        coordinator's output to a dated log file in `logs/` during the run;
-        pass the log path to the reflection agent after completion.
-      - The prompts that were active during the run (to propose targeted edits).
-      - The existing learnings for this project/scan-type (to detect repeats
-        and avoid duplicating known observations).
-
-      **What it produces:**
-      - New learning entries appended to `docs/learnings/<topic>.md`.
-      - When a pattern repeats 3+ times: a GitHub issue proposing the
-        escalation (prompt edit, new rule, or new convention) for human review.
-
-      **Open questions:**
-      - Log rotation: how many run logs to keep before pruning.
-      - Scoping: inject all learnings or only those relevant to the current
-        scan type / project?
-
-      See `docs/architecture/harness-self-improvement.md` for the full design.
+- [x] **Harness self-improvement**: transcript capture is mechanical and
+      per-run (coordinator tees each step's raw stream-json into
+      `{step}-transcript.jsonl`; metadata and reflections written on exit).
+      Cross-run pattern detection uses the standard scan pipeline via
+      `agency/retrospective` scan type — gets the full draft→review quality
+      gate, no per-run agent call. See
+      `docs/architecture/harness-self-improvement.md`.
 
 ### Domain knowledge
 

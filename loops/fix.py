@@ -21,7 +21,6 @@ from loops.common import (
     prepare_branch,
     project_context,
     run_command,
-    run_retrospective,
     run_tests,
     write_step,
 )
@@ -52,7 +51,12 @@ def _step(
 ) -> dict:
     """Run one agent step: time it, persist output, collect reflections."""
     t0 = time.monotonic()
-    out = agent(prompt, content, allowed_tools=allowed_tools)
+    out = agent(
+        prompt,
+        content,
+        allowed_tools=allowed_tools,
+        transcript_path=ctx.run_dir / f"{name}-transcript.jsonl",
+    )
     ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
     write_step(ctx.run_dir, name, out)
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
@@ -183,6 +187,7 @@ def run_fix(
             "converged": converged,
             "exit_code": exit_code,
         }
-        run_retrospective(run_dir, ctx.refs, metadata)
+        write_step(run_dir, "metadata", metadata)
+        write_step(run_dir, "reflections", ctx.refs)
         if exit_code != 0:
             sys.exit(exit_code)

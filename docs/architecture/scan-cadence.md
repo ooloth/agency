@@ -17,12 +17,13 @@ touching agency itself.
 
 ## Recommended cadences
 
-| Signal type       | Cadence | Rationale                                        |
-| ----------------- | ------- | ------------------------------------------------ |
-| Logs / error rates | Nightly | Spikes are time-sensitive; stale data is noise  |
-| Codebase quality  | Weekly  | Code changes slowly; daily runs produce noise    |
-| Dependencies      | Weekly  | CVEs matter; daily creates alert fatigue         |
-| Deployments / PRs | Daily   | Staleness compounds quickly                      |
+| Signal type            | Cadence      | Rationale                                        |
+| ---------------------- | ------------ | ------------------------------------------------ |
+| Logs / error rates     | Nightly      | Spikes are time-sensitive; stale data is noise   |
+| Codebase quality       | Weekly       | Code changes slowly; daily runs produce noise    |
+| Dependencies           | Weekly       | CVEs matter; daily creates alert fatigue         |
+| Deployments / PRs      | Daily        | Staleness compounds quickly                      |
+| Harness retrospective  | After N runs | Cross-run patterns need accumulation to surface  |
 
 These are starting points. A high-traffic service with volatile logs may need
 more frequent scans; a stable library that changes rarely may need fewer.

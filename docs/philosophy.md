@@ -142,11 +142,10 @@ improved, but because the harness did.
 
 ## Knowledge compounds across runs
 
-Each run should leave agency better-calibrated to each project. The
-`learnings/` directory captures discoveries from running the loops — not
-general programming knowledge, but observations about how agency behaves
-against real projects: what the prompts get wrong, where the coordinator
-breaks, what signal looks like in practice.
+Each run should leave agency better-calibrated to each project. Run
+directories in `.logs/` accumulate structured output, agent reflections, and
+raw transcripts — not as ephemeral debug data, but as the memory the
+retrospective scan reads to detect cross-run patterns.
 
 This is the feedback mechanism. A loop that doesn't improve the harness after
 failures is a loop that will keep making the same mistakes. The goal is a

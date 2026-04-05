@@ -12,7 +12,6 @@
 | `docs/architecture/` | How specific subsystems work; may describe design intent ahead of implementation |
 | `docs/conventions/`  | Code and doc style rules                                                         |
 | `docs/decisions/`    | ADR-style records of why key choices were made                                   |
-| `docs/learnings/`    | Discoveries from running the loops; append-only; not implementation claims       |
 | `docs/playbooks/`    | Step-by-step guides for common operator tasks                                    |
 | `docs/projects/`     | Per-project context injected into scan and fix prompts (this file)               |
 | `prompts/`           | Agent prompts — source of truth for what each step is expected to produce        |

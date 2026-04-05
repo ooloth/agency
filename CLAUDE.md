@@ -32,6 +32,5 @@ op run --env-file=secrets.env -- python3 run.py scan <project-id>
 | Harness self-improvement                        | [docs/architecture/harness-self-improvement.md](docs/architecture/harness-self-improvement.md) |
 | Conventions                                     | [docs/conventions/](docs/conventions/)                                                         |
 | How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
-| Discoveries from running the loops              | [docs/learnings/](docs/learnings/)                     |
 | Registered projects and data sources            | [projects/projects.json](projects/projects.json)       |
 | Open issues to fix                              | `gh issue list`                                        |

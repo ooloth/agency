@@ -38,9 +38,7 @@
           "type": "codebase/stale-docs",
           "normal": [],
           "flag": [],
-          "ignore": [
-            "docs/learnings/README.md 'not yet implemented' note — learnings file population is intentionally deferred to Phase 2"
-          ]
+          "ignore": []
         },
         {
           "type": "codebase/module-cohesion",
@@ -68,6 +66,19 @@
             "docs/ is intentionally informal — absence of docstrings there is not a gap",
             "prompts/ are markdown, not code — style inconsistencies there are not findings"
           ]
+        },
+        {
+          "type": "agency/retrospective",
+          "normal": [
+            "Occasional first-draft rejection followed by successful redraft is expected",
+            "Single non-convergence on a complex scan is not a pattern"
+          ],
+          "flag": [
+            "Same failure mode appearing across 3+ runs",
+            "Reflections mentioning missing context or ambiguous prompts repeatedly",
+            "Review rounds consistently rejecting for the same rule violation"
+          ],
+          "ignore": []
         }
       ]
     }

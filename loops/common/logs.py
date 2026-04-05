@@ -17,7 +17,7 @@ def make_run_dir(label: str) -> Path:
     return run_dir
 
 
-def write_step(run_dir: Path, step_name: str, output: dict) -> None:
+def write_step(run_dir: Path, step_name: str, output: dict | list) -> None:
     """Write a step's JSON output to the run directory."""
     (run_dir / f"{step_name}.json").write_text(json.dumps(output, indent=2))
 

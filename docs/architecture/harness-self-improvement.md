@@ -1,10 +1,10 @@
 # Harness Self-Improvement
 
-Agency improves itself by observing its own runs. Each agent reflects on its
-own step. A retrospective agent synthesises those reflections after every run,
-persists a run report, and opens GitHub issues for actionable findings. The
-fix loop can then implement harness improvements the same way it implements
-any other fix — from a well-formed issue, with a PR for human review.
+Agency improves itself by observing its own runs. Every run captures agent
+reflections and raw transcripts into `.logs/`. A periodic retrospective scan
+reads that accumulated data across recent runs, detects cross-run patterns,
+and produces GitHub issues through the standard scan pipeline — with the same
+draft→review quality gate that governs all other issues.
 
 The goal is to surface failure modes and inefficiencies automatically, reason
 from first principles about how to eliminate them (not just paper over them),
@@ -36,46 +36,14 @@ entry is a first-person observation about that step's own run:
 ```
 
 Reflections are observations, not instructions. They describe what happened
-from the agent's perspective, not what should change. The retrospective agent
+from the agent's perspective, not what should change. The retrospective scan
 draws conclusions.
 
-### 2. Retrospective agent
+### 2. Transcript capture (mechanical, per-run)
 
-Runs as a final step after every scan or fix run, called by the Python loop
-script after all other steps complete (including on convergence failure — a
-failed run often has the most useful signal).
-
-**Inputs:**
-- All `reflections` arrays collected from this run's step outputs
-- Run metadata: step durations, rounds per step, convergence result, exit code
-- The `.logs/` files from recent prior runs (for cross-run pattern detection)
-- All currently open GitHub issues labelled `agent-reflection` (to avoid
-  duplicates and to add evidence to existing patterns)
-- The prompt files that were active during this run (to propose targeted edits)
-
-**Outputs:**
-- A run report, always — printed to stdout and saved as `report.md` in the
-  run's log directory (see below)
-- Per actionable finding: a GitHub issue, or a comment on an existing issue
-  if the same pattern already has one open (see Issue format below)
-
-**Run report content:**
-- Summary of steps: rounds taken, convergence result, total duration
-- All agent reflections, grouped by step
-- Retrospective findings: patterns detected, proposed root causes, proposed
-  remedies (reasoned from first principles — "do this deterministically in
-  Python" not "remind the agent")
-- If nothing to report: an explicit "No observations. No known patterns
-  detected." — a clean run is also worth recording
-
-**Reasoning standard:** the retrospective agent is not a logging agent. It is
-expected to reason from the project's principles (determinism over agent
-judgment, thin coordinator, intelligence in prompts) and propose solutions
-that eliminate failure modes structurally, not rhetorically. The branch/commit
-example: seeing that an implementer spent 30 minutes with a reviewer rejecting
-for missing commits, the right proposal is "do branch creation and final commit
-deterministically in Python before and after the implement step" — not "remind
-the implementer to commit."
+During each step, the coordinator tees every raw stream-json line from the
+Claude subprocess into `{step}-transcript.jsonl` in the run directory.
+No agent call — this is purely mechanical I/O.
 
 ### 3. `.logs/` directory
 
@@ -84,33 +52,63 @@ One directory per run, written by the Python loop script:
 ```
 .logs/
   {YYYY-MM-DD}-{HH-MM}-{project}-{scan-type|fix-N}/
-    report.md           ← retrospective agent's run report
-    find.json           ← step output (scan runs)
-    triage.json         ← step output (scan runs)
-    draft.json          ← step output (scan runs)
-    review.json         ← step output (scan runs)
-    implement.json      ← step output (fix runs, per round)
-    review.json         ← step output (fix runs, per round)
-    run.log             ← full stdout (deferred — see note)
+    metadata.json               ← run type, project, step durations, convergence, exit code
+    reflections.json            ← all reflections collected from this run's steps
+    find.json                   ← step output (scan runs)
+    find-transcript.jsonl       ← raw Claude stream-json (scan runs)
+    triage.json                 ← step output (scan runs)
+    triage-transcript.jsonl
+    draft.json                  ← step output (scan runs)
+    draft-transcript.jsonl
+    review-N.json               ← step output (scan runs, per round)
+    review-N-transcript.jsonl
+    implement-N.json            ← step output (fix runs, per round)
+    implement-N-transcript.jsonl
+    review-N.json               ← step output (fix runs, per round)
+    review-N-transcript.jsonl
 ```
 
-Gitignored. Runtime output, not source. The retrospective agent reads recent
+Gitignored. Runtime output, not source. The retrospective scan reads recent
 entries from `.logs/` when looking for cross-run patterns.
 
-**run.log (deferred):** capturing full stdout requires tee-ing the Python
-process's output stream. Deferred until the JSON step outputs plus run metadata
-prove insufficient for retrospective analysis.
+### 4. Periodic retrospective scan (`agency/retrospective`)
 
-### 4. GitHub issues (reflection issues)
+A standard scan type — uses the same find→triage→draft→review pipeline as
+any other scan. The find agent reads recent `.logs/` run directories using
+Read, Glob, and Grep, then outputs findings in the standard format.
 
-One issue per distinct actionable finding. Issues are opened (or commented on)
-by the retrospective agent using `gh`. They follow the same three-section
-format as scan-generated issues:
+Running through the full pipeline means:
+- Draft quality is checked by the review agent before posting
+- No findings bypass the review gate
+- Informational observations that don't meet the issue bar are discarded
+  cleanly, not silently lost
 
-- **Problem** — what was observed, with evidence from the run (step, round
-  count, duration, agent's own reflection text)
-- **Definition of done** — what the fixed state looks like from the outside,
-  observable and verifiable
+**Recommended cadence:** after every N runs, or daily if runs accumulate.
+See `docs/architecture/scan-cadence.md`.
+
+**What the find agent looks for:**
+- Non-convergence patterns: runs where `converged: false` appearing repeatedly
+- Excessive rounds: step round counts well above normal
+- Repeated reflections: the same agent observation across multiple steps or runs
+- Review rejections for the same rule violation across multiple drafts
+- Wasted work: steps that repeat without progress
+
+**Reasoning standard:** the find agent is expected to reason structurally.
+When it sees a failure mode, the right answer is almost never "remind the
+agent to do X." It is usually:
+- This should be done deterministically in Python before/after the agent step
+- The prompt was missing context the agent needed
+- The output schema allowed ambiguity the agent resolved incorrectly
+- The loop structure created a situation the agent couldn't handle
+
+### 5. GitHub issues (reflection issues)
+
+One issue per distinct actionable pattern, produced by the standard scan
+pipeline and therefore subject to the same review gate. They follow the same
+three-section format as all scan-generated issues:
+
+- **Problem** — what was observed, with evidence from the run data
+- **Definition of done** — what the fixed state looks like from the outside
 - **Out of scope** — what this issue does not ask for
 
 **Labels:**
@@ -118,44 +116,13 @@ format as scan-generated issues:
 | Label | Meaning |
 | --- | --- |
 | `agent-reflection` | All retrospective-generated issues |
-| `reflection:scan` | Scan loop behaviour (prompt quality, clustering, calibration) |
-| `reflection:fix` | Fix loop behaviour (implementation, review, branch/commit) |
+| `reflection:scan` | Scan loop behaviour |
+| `reflection:fix` | Fix loop behaviour |
 | `reflection:{project-id}` | Project-specific signal calibration |
 
 Reflection issues do **not** carry the `ready-to-fix` label when opened. The
 fix loop will not pick them up until a human reviews the issue and adds
-`ready-to-fix`. This gives you the opportunity to close, edit, or comment
-before any automated action is taken.
-
-**Duplicate handling:** before opening a new issue, the retrospective agent
-searches open `agent-reflection` issues for the same pattern. If found, it
-comments on the existing issue with the new evidence rather than opening a
-duplicate. A growing comment thread is a visible signal of priority.
-
-### 5. `docs/learnings/` files
-
-Durable record of *resolved* improvements. Written when the fix loop closes a
-reflection issue by opening a PR — not during or after the run that surfaced
-the observation. These files are not injected into prompts; the knowledge is
-already in the updated prompt or loop code. They serve as a human-readable
-history of how the harness has evolved.
-
-**Files:**
-
-| File | Contains |
-| --- | --- |
-| `docs/learnings/scan.md` | Resolved scan loop improvements |
-| `docs/learnings/fix.md` | Resolved fix loop improvements |
-| `docs/learnings/{project-id}.md` | Resolved project calibration improvements |
-
-**Format:**
-
-```
-- YYYY-MM-DD [reflection:scan]: one or two lines describing what was observed
-  and what the fix was. Closes #{issue-number}.
-```
-
-Append only. The history of past mistakes is useful.
+`ready-to-fix`.
 
 ---
 
@@ -164,22 +131,18 @@ Append only. The history of past mistakes is useful.
 ```
 During run:
   each agent step → reflections[] in JSON output
-  Python loop     → writes step JSON to .logs/{run}/
+  Python loop     → writes step JSON + transcript to .logs/{run}/
+  Python loop     → writes metadata.json + reflections.json on exit
 
-After run:
-  Python loop → calls retrospective agent with:
-                  all reflections, run metadata,
-                  recent .logs/ entries,
-                  open agent-reflection issues,
-                  active prompt files
+Periodically (human or scheduler):
+  run: uv run run.py scan agency --type agency/retrospective
 
-Retrospective agent:
-  → always prints run report to stdout
-  → saves report.md to .logs/{run}/
-  → per actionable finding:
-      open issue exists? → comment with new evidence
-      no open issue?     → open new issue (agent-reflection + reflection:* labels)
-                            no ready-to-fix label yet
+Retrospective scan (standard pipeline):
+  find agent  → reads recent .logs/ entries, outputs findings[]
+  triage      → clusters findings
+  draft       → writes GitHub issue bodies
+  review      → quality gate (rejects if issue violates rules)
+  post        → opens issues with agent-reflection labels
 
 Human reviews issue:
   → closes if wrong/irrelevant
@@ -188,7 +151,6 @@ Human reviews issue:
 
 Fix loop picks up issue:
   → implements harness change (prompt edit, loop change, etc.)
-  → appends entry to docs/learnings/{scan|fix|project-id}.md
   → opens PR as normal
 
 Human reviews and merges PR:
@@ -200,7 +162,7 @@ Human reviews and merges PR:
 
 ## What makes a good reflection issue
 
-The retrospective agent should be prompted to meet this bar:
+The retrospective scan agent should meet this bar:
 
 - **Specific** — names the step, the round, the duration, the agent's own words
 - **Causal** — explains why the failure happened, not just that it happened

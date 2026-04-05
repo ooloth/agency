@@ -13,7 +13,6 @@ from loops.common import (
     make_run_dir,
     open_issue_titles,
     post_issues,
-    run_retrospective,
     scan_context,
     write_step,
 )
@@ -31,7 +30,7 @@ class _RunCtx:
 def _step(ctx: _RunCtx, name: str, prompt: str, content: str) -> dict:
     """Run one agent step: time it, persist output, collect reflections."""
     t0 = time.monotonic()
-    out = agent(prompt, content)
+    out = agent(prompt, content, transcript_path=ctx.run_dir / f"{name}-transcript.jsonl")
     ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
     write_step(ctx.run_dir, name, out)
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
@@ -133,6 +132,7 @@ def run_scan(
             "converged": converged,
             "exit_code": exit_code,
         }
-        run_retrospective(run_dir, ctx.refs, metadata, dry_run=dry_run)
+        write_step(run_dir, "metadata", metadata)
+        write_step(run_dir, "reflections", ctx.refs)
         if exit_code != 0:
             sys.exit(exit_code)

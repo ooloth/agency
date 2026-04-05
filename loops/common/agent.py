@@ -49,7 +49,11 @@ def _print_event(event: dict) -> None:
 
 
 def agent(
-    prompt_file: str, context: str, max_turns: int = 20, allowed_tools: list[str] | None = None
+    prompt_file: str,
+    context: str,
+    max_turns: int = 20,
+    allowed_tools: list[str] | None = None,
+    transcript_path: Path | None = None,
 ) -> dict:
     """Run a claude agent with the given prompt and context, returning its JSON output."""
     prompt = (ROOT / prompt_file).read_text()
@@ -85,6 +89,9 @@ def agent(
         stripped = raw_line.strip()
         if not stripped:
             continue
+        if transcript_path is not None:
+            with transcript_path.open("a") as fh:
+                fh.write(raw_line)
         with contextlib.suppress(json.JSONDecodeError):
             _print_event(json.loads(stripped))
     proc.wait()
