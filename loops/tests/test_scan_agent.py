@@ -16,3 +16,26 @@ def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
         pytest.raises(RuntimeError, match="claude subprocess exited with return code 1"),
     ):
         agent("prompts/scan/sources/codebase/dead-code.md", "some context")
+
+
+def test_agent_raises_with_context_on_malformed_json(tmp_path: Path) -> None:
+    output_file = tmp_path / "agent_output.json"
+    output_file.touch()  # so the initial unlink() succeeds
+
+    proc_mock = MagicMock()
+    proc_mock.stdout = iter([])
+    proc_mock.returncode = 0
+    proc_mock.wait.side_effect = lambda: output_file.write_text("this is not json")
+
+    tmp_file_mock = MagicMock()
+    tmp_file_mock.name = str(output_file)
+    ntf_ctx = MagicMock()
+    ntf_ctx.__enter__ = MagicMock(return_value=tmp_file_mock)
+    ntf_ctx.__exit__ = MagicMock(return_value=False)
+
+    with (
+        patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
+        patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
+        pytest.raises(RuntimeError, match="non-JSON output"),
+    ):
+        agent("prompts/scan/sources/codebase/dead-code.md", "some context")
