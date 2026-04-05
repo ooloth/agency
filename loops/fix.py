@@ -177,6 +177,8 @@ def run_fix(
         exit_code = 1
 
     finally:
+        if not converged:
+            exit_code = max(exit_code, 1)
         git("checkout", original_branch, cwd=project_path)
         metadata = {
             "run_type": "fix",
@@ -189,5 +191,5 @@ def run_fix(
         }
         write_step(run_dir, "metadata", metadata)
         write_step(run_dir, "reflections", ctx.refs)
-        if exit_code != 0:
+        if exit_code != 0 and sys.exc_info()[0] is None:
             sys.exit(exit_code)
