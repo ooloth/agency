@@ -84,8 +84,8 @@ def run_fix(
 
     for key, label in [
         ("install", "installing dependencies"),
-        ("checks", "running checks"),
-        ("tests", "running tests"),
+        ("check", "running checks"),
+        ("test", "running tests"),
     ]:
         if cmd := project.get(key):
             run_command(cmd, project_path, label)
@@ -130,7 +130,7 @@ def run_fix(
                 )
                 continue
 
-            tests = run_tests(project_path, project.get("tests"))
+            tests = run_tests(project_path, project.get("test"))
 
             review_context = _with_project_ctx(
                 {
