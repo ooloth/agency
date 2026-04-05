@@ -102,4 +102,8 @@ def agent(
         lines = text.splitlines()
         end = next((i for i in range(len(lines) - 1, 0, -1) if lines[i].strip() == "```"), None)
         text = "\n".join(lines[1:end] if end else lines[1:])
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        msg = f"Agent ({prompt_file}) returned non-JSON output:\n{text}"
+        raise RuntimeError(msg) from exc
