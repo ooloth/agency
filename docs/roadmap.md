@@ -130,6 +130,27 @@
       effort without paying for it on the implement step; configurable in
       `projects.json` per project
 
+## Future: Coordinator run-health signals
+
+Two failure modes the coordinator can detect mechanically, without waiting for
+the retrospective to notice them across runs:
+
+- **Non-convergence escalation** (scan + fix): when `max_rounds` is reached
+  without convergence, the coordinator logs `[escalate]` and exits 1. It should
+  also act: for the fix loop, post a comment on the issue explaining what
+  happened and remove `ready-to-fix` so a human sees it; for the scan loop, open
+  an issue tagged `agent-escalation`. Single-run signal — acting at the
+  coordinator level is faster than routing through the retrospective.
+
+- **Scan draft non-progress**: if a redraft is identical to the previous draft,
+  the next review round will reject for the same reason. The coordinator can
+  compare draft N to draft N-1 and escalate early instead of burning a
+  review+redraft round. The fix loop already has this ("no diff against base
+  branch" check at `fix.py`). The scan loop needs the equivalent.
+
+Both belong in the coordinator (sequencing lives in code). Tackle after the fix
+loop dogfood validates basic loop mechanics.
+
 ## Future: Axiom ingestion for run telemetry
 
 Today's run data lives in `.logs/` as local files. The retrospective scan
