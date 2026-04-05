@@ -24,7 +24,7 @@ You will receive a GitHub issue and a branch name. Your job is to:
 
 Write your output as JSON to the file path provided by the coordinator.
 
-Include `reflections` — a list of brief observations about this step: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. Return `[]` if you have nothing to add.
+Include `reflections` — a list of brief observations about **your own implementation decisions**: what context was missing or ambiguous, what caused hesitation or retries, what would have made this step faster or more accurate. If you are re-implementing in response to review feedback, report what was hard to change and why — not the reviewer's observations, which are already captured elsewhere. Return `[]` if you have nothing to add.
 
 ```json
 {
