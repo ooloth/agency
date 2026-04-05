@@ -23,7 +23,7 @@ touching agency itself.
 | Codebase quality       | Weekly       | Code changes slowly; daily runs produce noise    |
 | Dependencies           | Weekly       | CVEs matter; daily creates alert fatigue         |
 | Deployments / PRs      | Daily        | Staleness compounds quickly                      |
-| Harness retrospective  | After N runs | Cross-run patterns need accumulation to surface  |
+| Harness retrospective  | Weekly       | Cross-run patterns need accumulation; weekly gives enough data without losing signal to noise |
 
 These are starting points. A high-traffic service with volatile logs may need
 more frequent scans; a stable library that changes rarely may need fewer.
