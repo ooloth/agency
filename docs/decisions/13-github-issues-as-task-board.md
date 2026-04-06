@@ -18,19 +18,27 @@ command.
 
 **Label taxonomy:**
 
-| Label              | Applied by   | Meaning                                        |
-| ------------------ | ------------ | ---------------------------------------------- |
-| `autonomous`       | scan loop    | Opened by an agent                             |
-| `needs-human-review` | scan loop  | Awaiting human review before any action        |
-| `scan:codebase`    | scan loop    | Output of a codebase scan                      |
-| `scan:logs`        | scan loop    | Output of a logs scan                          |
-| `scan:retrospective` | scan loop  | Output of a scan-loop retrospective            |
-| `fix:retrospective`  | scan loop  | Output of a fix-loop retrospective             |
-| `sev:*`            | scan loop    | Severity (critical / high / medium / low)      |
-| `ready-for-agent`  | human        | Reviewed and ready for the fix loop            |
-| `fix-in-progress`  | fix loop     | Claimed by a running fix loop instance         |
-| `enhancement`      | human        | Manually planned improvement                   |
-| `idea`             | human        | Speculative — no definition of done yet        |
+| Label                 | Applied by | Meaning                                        |
+| --------------------- | ---------- | ---------------------------------------------- |
+| `autonomous`          | scan loop  | Opened by an agent                             |
+| `needs-human-review`  | scan loop  | Awaiting human review before any action        |
+| `scan:codebase`       | scan loop  | Output of a codebase scan                      |
+| `scan:logs`           | scan loop  | Output of a logs scan                          |
+| `scan:retrospective`  | scan loop  | Output of a scan-loop retrospective            |
+| `fix:retrospective`   | scan loop  | Output of a fix-loop retrospective             |
+| `sev:*`               | scan loop  | Severity (critical / high / medium / low)      |
+| `ready-for-agent`     | human      | Reviewed and ready for the fix loop            |
+| `fix-in-progress`     | fix loop   | Claimed by a running fix loop instance         |
+| `enhancement`         | human      | Manually planned improvement                   |
+| `idea`                | human      | Speculative — no definition of done yet        |
+| `scope:agent`         | human      | Claude subprocess wrapper, transcript, timeout |
+| `scope:cli`           | human      | run.py, argument parsing, commands             |
+| `scope:config`        | human      | projects.json, schema, project loading         |
+| `scope:docs`          | human      | Documentation accuracy and coverage            |
+| `scope:fix`           | human      | Fix loop, implement, review, PR opening        |
+| `scope:github`        | human      | gh wrapper, issues, labels, PRs                |
+| `scope:observability` | human      | Logging, cost tracking, run history            |
+| `scope:scan`          | human      | Scan loop, triage, draft, review pipeline      |
 
 **What agents read:**
 
