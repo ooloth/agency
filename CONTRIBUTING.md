@@ -17,10 +17,10 @@ cd agency
 uv sync --all-extras --reinstall
 
 # Install pre-commit hooks (overwriting any existing ones)
-uv run prek install --overwrite
+uv run --frozen prek install --overwrite
 ```
 
 ## Develop
 
-- Run checks: `uv run prek run --all-files`
-- Run tests: `uv run pytest`
+- Run checks: `uv run --frozen prek run --all-files`
+- Run tests: `uv run --frozen pytest`

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run prek run --all-files >&2"
+            "command": "uv run --frozen prek run --all-files >&2"
           }
         ]
       }

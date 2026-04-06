@@ -81,19 +81,19 @@ See [docs/playbooks/](docs/playbooks/) for step-by-step instructions.
 
 ```bash
 # Scan a project (dry run — prints issues without posting)
-uv run python run.py scan my-project --type codebase/dead-code --dry-run
+uv run --frozen python run.py scan my-project --type codebase/dead-code --dry-run
 
 # Scan a project and post issues
-uv run python run.py scan my-project --type codebase/dead-code
+uv run --frozen python run.py scan my-project --type codebase/dead-code
 
 # Fix a specific issue
-uv run python run.py fix --issue 3 --project my-project
+uv run --frozen python run.py fix --issue 3 --project my-project
 
 # Fix the next open issue labelled 'agent'
-uv run python run.py fix
+uv run --frozen python run.py fix
 
 # Run with secrets from 1Password exposed as environment variables
-op run --env-file=secrets.env -- uv run python run.py scan pilots --type logs/error-spikes
+op run --env-file=secrets.env -- uv run --frozen python run.py scan pilots --type logs/error-spikes
 ```
 
 ## Schedule
@@ -102,7 +102,7 @@ Edit your crontab with `crontab -e`:
 
 ```
 # nightly at 2am — use absolute paths; cron has a minimal environment
-0 2 * * * cd ~/path/to/agency && /opt/homebrew/bin/op run --env-file=secrets.env -- ~/.local/bin/uv run python run.py scan my-project --type codebase/dead-code
+0 2 * * * cd ~/path/to/agency && /opt/homebrew/bin/op run --env-file=secrets.env -- ~/.local/bin/uv run --frozen python run.py scan my-project --type codebase/dead-code
 ```
 
 Or use GitHub Actions or your favourite other scheduler.
@@ -111,17 +111,17 @@ Or use GitHub Actions or your favourite other scheduler.
 
 ## Docs
 
-| What                                            | Where                                                  |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)               |
-| Design decisions                                | [docs/decisions/](docs/decisions/)                     |
-| Invariants to uphold                            | [docs/rules.md](docs/rules.md)                         |
-| How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                     |
-| Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md) |
+| What                                            | Where                                                                                          |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Philosophy and goals                            | [docs/philosophy.md](docs/philosophy.md)                                                       |
+| Design decisions                                | [docs/decisions/](docs/decisions/)                                                             |
+| Invariants to uphold                            | [docs/rules.md](docs/rules.md)                                                                 |
+| How to add projects, scan types, debug failures | [docs/playbooks/](docs/playbooks/)                                                             |
+| Auth strategies by provider                     | [docs/architecture/auth.md](docs/architecture/auth.md)                                         |
 | Scan cadence and entropy management             | [docs/architecture/scan-cadence.md](docs/architecture/scan-cadence.md)                         |
 | Harness self-improvement                        | [docs/architecture/harness-self-improvement.md](docs/architecture/harness-self-improvement.md) |
 | Conventions                                     | [docs/conventions/](docs/conventions/)                                                         |
-| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                     |
+| Roadmap                                         | [docs/roadmap.md](docs/roadmap.md)                                                             |
 
 ---
 

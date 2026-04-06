@@ -18,7 +18,7 @@
    {
      "type": "codebase",
      "normal": ["...what healthy looks like"],
-     "flag":   ["...conditions that should become issues"],
+     "flag": ["...conditions that should become issues"],
      "ignore": ["...known noise to skip"]
    }
    ```
@@ -32,10 +32,11 @@
      "dataset": "my-dataset",
      "token": "${MY_TOKEN}",
      "normal": ["..."],
-     "flag":   ["..."],
+     "flag": ["..."],
      "ignore": ["..."]
    }
    ```
+
    Add the corresponding `MY_TOKEN=op://...` line to `secrets.env`.
 
 3. Optionally create `docs/projects/<project-id>.md` with context that will
@@ -49,11 +50,11 @@
 
    ```json
    "install": "uv sync",
-   "tests":   "uv run pytest --tb=short -q"
+   "tests":   "uv run --frozen pytest"
    ```
 
 5. Run a dry-run scan to verify:
 
    ```bash
-   uv run python run.py scan my-project --type codebase --dry-run
+   uv run --frozen python run.py scan my-project --type codebase --dry-run
    ```

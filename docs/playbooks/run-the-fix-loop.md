@@ -3,12 +3,15 @@
 1. Ensure the issue is labelled `agent` in GitHub so the fix loop can find it.
 
 2. Run:
+
    ```bash
-   uv run python run.py fix --issue <number>
+   uv run --frozen python run.py fix --issue <number>
    ```
+
    Or let it pick the next open `agent`-labelled issue:
+
    ```bash
-   uv run python run.py fix
+   uv run --frozen python run.py fix
    ```
 
 3. The loop will implement, review, and revise until approved or escalated.

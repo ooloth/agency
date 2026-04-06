@@ -78,6 +78,7 @@ any other scan. The find agent reads recent `.logs/` run directories using
 Read, Glob, and Grep, then outputs findings in the standard format.
 
 Running through the full pipeline means:
+
 - Draft quality is checked by the review agent before posting
 - No findings bypass the review gate
 - Informational observations that don't meet the issue bar are discarded
@@ -87,6 +88,7 @@ Running through the full pipeline means:
 See `docs/architecture/scan-cadence.md`.
 
 **What the find agent looks for:**
+
 - Non-convergence patterns: runs where `converged: false` appearing repeatedly
 - Excessive rounds: step round counts well above normal
 - Repeated reflections: the same agent observation across multiple steps or runs
@@ -96,6 +98,7 @@ See `docs/architecture/scan-cadence.md`.
 **Reasoning standard:** the find agent is expected to reason structurally.
 When it sees a failure mode, the right answer is almost never "remind the
 agent to do X." It is usually:
+
 - This should be done deterministically in Python before/after the agent step
 - The prompt was missing context the agent needed
 - The output schema allowed ambiguity the agent resolved incorrectly
@@ -113,11 +116,11 @@ three-section format as all scan-generated issues:
 
 **Labels:**
 
-| Label | Meaning |
-| --- | --- |
-| `agent-reflection` | All retrospective-generated issues |
-| `reflection:scan` | Scan loop behaviour |
-| `reflection:fix` | Fix loop behaviour |
+| Label                     | Meaning                             |
+| ------------------------- | ----------------------------------- |
+| `agent-reflection`        | All retrospective-generated issues  |
+| `reflection:scan`         | Scan loop behaviour                 |
+| `reflection:fix`          | Fix loop behaviour                  |
 | `reflection:{project-id}` | Project-specific signal calibration |
 
 Reflection issues do **not** carry the `ready-to-fix` label when opened. The
@@ -135,7 +138,7 @@ During run:
   Python loop     → writes metadata.json + reflections.json on exit
 
 Periodically (human or scheduler):
-  run: uv run run.py scan agency --type agency/retrospective
+  run: uv run --frozen run.py scan agency --type agency/retrospective
 
 Retrospective scan (standard pipeline):
   find agent  → reads recent .logs/ entries, outputs findings[]
@@ -172,7 +175,7 @@ scale but has structural limits:
 
 **Key insight:** The stream-json transcript lines are already structured events.
 Each line is valid JSON with a `type` field and content blocks containing tool
-calls, text, and results. They are not blobs. This means *all* run data
+calls, text, and results. They are not blobs. This means _all_ run data
 (metadata, reflections, and transcripts) can be ingested into Axiom as discrete
 queryable events, tagged with run/step/project metadata.
 
