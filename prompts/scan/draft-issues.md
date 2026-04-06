@@ -9,21 +9,21 @@ issue, write a clear, actionable issue using the three-section structure below.
 
 ## Structure
 
-### Problem
+### Problem 🎯
 
 One paragraph: what is wrong and why it matters. Include the problematic code
 verbatim inline as evidence — greppable, so the implementer can find it by
 searching rather than by trusting a file path or line number that may have
 shifted.
 
-### Definition of done
+### Definition of done ✅
 
 Describe what the fixed state looks like from the outside. Frame it as:
-*"you know this is fixed when..."* — observable outcomes, not implementation
+_"you know this is fixed when..."_ — observable outcomes, not implementation
 prescriptions. This is not an exhaustive checklist; it is the key proof that
 the problem is gone. Implementers and reviewers can go beyond it.
 
-### Out of scope
+### Out of scope ⛔
 
 What not to change. Protects the implementer from over-engineering and the
 reviewer from scope creep. Be specific — name the related concerns that are
