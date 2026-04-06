@@ -14,8 +14,8 @@ hooks = [
 # Language is "system" instead of "python" to prevent prek from creating a second venv, which would be redundant and could cause issues with native dependencies
 repo = "local"
 hooks = [
-  { id = "ruff-check", name = "ruff-check", entry = "uv run ruff check --fix", language = "system", types = ["python"] },
-  { id = "ruff-format", name = "ruff-format", entry = "uv run ruff format", language = "system", types = ["python"] },
+  { id = "ruff-check", name = "ruff-check", entry = "uv run --frozen ruff check --fix", language = "system", types = ["python"] },
+  { id = "ruff-format", name = "ruff-format", entry = "uv run --frozen ruff format", language = "system", types = ["python"] },
   # ty is a whole-program checker — a change in src/ can cause a type error in tests/ etc
   # It must always run against the full codebase, not just the staged files. See https://github.com/astral-sh/ty/issues/269#issuecomment-3669333114
   { id = "ty-check", name = "ty check", entry = "uv run --frozen ty check", language = "system", types=["python"], pass_filenames = false, always_run = true },
