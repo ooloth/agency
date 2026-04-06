@@ -85,15 +85,19 @@ def agent(
     if proc.stdout is None:
         msg = "Subprocess stdout is None"
         raise RuntimeError(msg)
-    for raw_line in proc.stdout:
-        stripped = raw_line.strip()
-        if not stripped:
-            continue
-        if transcript_path is not None:
-            with transcript_path.open("a") as fh:
+    fh = transcript_path.open("a") if transcript_path is not None else None
+    try:
+        for raw_line in proc.stdout:
+            stripped = raw_line.strip()
+            if not stripped:
+                continue
+            if fh is not None:
                 fh.write(raw_line)
-        with contextlib.suppress(json.JSONDecodeError):
-            _print_event(json.loads(stripped))
+            with contextlib.suppress(json.JSONDecodeError):
+                _print_event(json.loads(stripped))
+    finally:
+        if fh is not None:
+            fh.close()
     proc.wait()
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
