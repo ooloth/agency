@@ -28,7 +28,8 @@ command.
 | `fix:retrospective`   | scan loop  | Output of a fix-loop retrospective             |
 | `sev:*`               | scan loop  | Severity (critical / high / medium / low)      |
 | `ready-for-agent`     | human      | Reviewed and ready for the fix loop            |
-| `fix-in-progress`     | fix loop   | Claimed by a running fix loop instance         |
+| `agent-fix-in-progress` | fix loop | Claimed by a running fix loop instance        |
+| `agent-fix-stalled`   | fix loop   | Fix attempted but did not converge             |
 | `enhancement`         | human      | Manually planned improvement                   |
 | `idea`                | human      | Speculative — no definition of done yet        |
 | `scope:agent`         | human      | Claude subprocess wrapper, transcript, timeout |
@@ -42,8 +43,10 @@ command.
 
 **What agents read:**
 
-The fix loop queries `--label ready-for-agent` to find its next issue. No other
-label causes the fix loop to act. Labels like `enhancement` and `idea` are
+The fix loop queries `--label ready-for-agent` to find its next issue, excluding
+issues labeled `agent-fix-in-progress` (claimed by another run) or
+`agent-fix-stalled` (failed on a prior attempt and awaiting human review). No
+other label causes the fix loop to act. Labels like `enhancement` and `idea` are
 purely for human organisation — agents ignore them. The scan loop queries
 `--label autonomous` when checking for duplicate titles before posting.
 The backpressure cap counts `--label ready-for-agent` issues — the depth of the
