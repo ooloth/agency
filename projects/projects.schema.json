@@ -53,7 +53,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "Path to the prompt file under prompts/scan/sources/, e.g. logs/error-spikes or codebase/dead-code"
+          "description": "Scan type identifier, e.g. logs/error-spikes, codebase/dead-code, or agency/history/scans"
         },
         "normal": {
           "type": "array",

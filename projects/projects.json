@@ -68,7 +68,7 @@
           ]
         },
         {
-          "type": "agency/retrospective",
+          "type": "agency/history/scans",
           "normal": [
             "Occasional first-draft rejection followed by successful redraft is expected",
             "Single non-convergence on a complex scan is not a pattern"
@@ -81,7 +81,7 @@
           "ignore": []
         },
         {
-          "type": "agency/fix-retrospective",
+          "type": "agency/history/fixes",
           "normal": [
             "Occasional first-draft rejection followed by successful redraft is expected",
             "Single non-convergence on a complex fix run is not a pattern"

@@ -1,7 +1,7 @@
 # Periodic retrospective replaces per-run retrospective agent
 
 **Decision**: Cross-run pattern detection runs as a standard scan
-(`agency/retrospective`) triggered periodically, not as an agent call at the
+(`agency/history/scans`) triggered periodically, not as an agent call at the
 end of every run.
 
 **Why**: The per-run retrospective had three structural problems:

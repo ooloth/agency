@@ -71,7 +71,7 @@ One directory per run, written by the Python loop script:
 Gitignored. Runtime output, not source. The retrospective scan reads recent
 entries from `.logs/` when looking for cross-run patterns.
 
-### 4. Periodic retrospective scan (`agency/retrospective`)
+### 4. Periodic retrospective scan (`agency/history/scans`)
 
 A standard scan type — uses the same find→triage→draft→review pipeline as
 any other scan. The find agent reads recent `.logs/` run directories using
@@ -138,7 +138,7 @@ During run:
   Python loop     → writes metadata.json + reflections.json on exit
 
 Periodically (human or scheduler):
-  run: uv run --frozen run.py scan agency --type agency/retrospective
+  run: uv run --frozen run.py scan agency --type agency/history/scans
 
 Retrospective scan (standard pipeline):
   find agent  → reads recent .logs/ entries, outputs findings[]

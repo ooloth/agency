@@ -1,7 +1,8 @@
 # Prompts as the primary extension point
 
-**Decision**: Adding a new scan type means adding a `prompts/scan/sources/<type>.md`
-file. Adding a new step means adding a prompt and one `agent()` call.
+**Decision**: Adding a new scan type means adding a prompt file under
+`prompts/scan/<type>.md`. Adding a new step means adding a prompt and one
+`agent()` call.
 
 **Why**: A prompt is the right level of abstraction for evolving analytical
 judgment. It is readable, diffable, and testable by running the loop.

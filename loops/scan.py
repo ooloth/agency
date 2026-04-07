@@ -43,11 +43,16 @@ class _StepCfg:
 _FIND_CFG = _StepCfg(allowed_tools=["Read", "Glob", "Grep"], max_turns=30)
 
 
+def _find_prompt(scan_type: str) -> str:
+    """Return the prompt path for a scan type's find step."""
+    return f"prompts/scan/{scan_type}.md"
+
+
 def _issue_labels(scan_type: str) -> list[str]:
     """Return the labels to apply to every issue posted by this scan type."""
-    if scan_type == "agency/retrospective":
+    if scan_type == "agency/history/scans":
         source = "scan:retrospective"
-    elif scan_type == "agency/fix-retrospective":
+    elif scan_type == "agency/history/fixes":
         source = "fix:retrospective"
     elif scan_type.startswith("logs/"):
         source = "scan:logs"
@@ -93,7 +98,7 @@ def _run_review_rounds(
         reviewed = _step(
             ctx,
             f"review-{round_n + 1}",
-            "prompts/scan/review-issues.md",
+            "prompts/scan/review.md",
             json.dumps(drafted),
         )
         if reviewed["ready"]:
@@ -105,7 +110,7 @@ def _run_review_rounds(
         drafted = _step(
             ctx,
             f"redraft-{round_n + 1}",
-            "prompts/scan/draft-issues.md",
+            "prompts/scan/draft.md",
             json.dumps(reviewed),
         )
     return False
@@ -131,7 +136,7 @@ def run_scan(
         msg = f"Project '{project_id}' has no '{scan_type}' scan configured"
         raise ValueError(msg)
     context = scan_context(project, scan)
-    if scan_type in ("agency/retrospective", "agency/fix-retrospective"):
+    if scan_type in ("agency/history/scans", "agency/history/fixes"):
         summaries = recent_run_summaries()
         context = f"{context}\n\n## Recent run summaries\n\n{json.dumps(summaries, indent=2)}"
 
@@ -143,7 +148,7 @@ def run_scan(
 
     try:
         log.info("[scan] %s/%s: finding problems...", project_id, scan_type)
-        raw = _step(ctx, "find", f"prompts/scan/sources/{scan_type}.md", context, _FIND_CFG)
+        raw = _step(ctx, "find", _find_prompt(scan_type), context, _FIND_CFG)
 
         if not raw.get("findings"):
             log.info("[scan] %s/%s: nothing to report", project_id, scan_type)
@@ -159,7 +164,7 @@ def run_scan(
             return
 
         log.info("[scan] %s cluster(s) — drafting issues...", len(clustered["clusters"]))
-        drafted = _step(ctx, "draft", "prompts/scan/draft-issues.md", json.dumps(clustered))
+        drafted = _step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
 
         converged = _run_review_rounds(
             ctx, drafted, max_rounds, f"{project_id}/{scan_type}", dry_run=dry_run

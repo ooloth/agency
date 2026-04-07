@@ -17,7 +17,7 @@ def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
         patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
         pytest.raises(RuntimeError, match="claude subprocess exited with return code 1"),
     ):
-        agent("prompts/scan/sources/codebase/dead-code.md", "some context")
+        agent("prompts/scan/codebase/dead-code.md", "some context")
 
 
 def test_agent_raises_with_context_on_malformed_json(tmp_path: Path) -> None:
@@ -40,7 +40,7 @@ def test_agent_raises_with_context_on_malformed_json(tmp_path: Path) -> None:
         patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
         pytest.raises(RuntimeError, match="non-JSON output"),
     ):
-        agent("prompts/scan/sources/codebase/dead-code.md", "some context")
+        agent("prompts/scan/codebase/dead-code.md", "some context")
 
 
 def test_agent_writes_transcript_when_path_provided(tmp_path: Path) -> None:
@@ -65,7 +65,7 @@ def test_agent_writes_transcript_when_path_provided(tmp_path: Path) -> None:
         patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
     ):
         agent(
-            "prompts/scan/sources/codebase/dead-code.md",
+            "prompts/scan/codebase/dead-code.md",
             "some context",
             AgentConfig(transcript_path=transcript_file),
         )
@@ -104,7 +104,7 @@ def test_agent_raises_timeout_error_when_subprocess_exceeds_limit(tmp_path: Path
         pytest.raises(TimeoutError, match=r"'find'.*timed out"),
     ):
         agent(
-            "prompts/scan/sources/codebase/dead-code.md",
+            "prompts/scan/codebase/dead-code.md",
             "some context",
             AgentConfig(step_name="find", timeout_minutes=0.001),
         )
@@ -129,6 +129,6 @@ def test_agent_skips_transcript_when_path_not_provided(tmp_path: Path) -> None:
         patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
         patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
     ):
-        agent("prompts/scan/sources/codebase/dead-code.md", "some context")
+        agent("prompts/scan/codebase/dead-code.md", "some context")
 
     assert not any(tmp_path.glob("*.jsonl"))
