@@ -12,10 +12,14 @@ import functools
 import json
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from loops.common.git import git
 from loops.common.logging import log
+
+MAX_RETRIES = 3
+BACKOFF_BASE_SECONDS = 1
 
 
 @functools.cache
@@ -29,15 +33,39 @@ def _gh_path() -> str:
 
 
 def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.CompletedProcess:
-    """Run a gh CLI command with the given arguments."""
-    # S603: sole allowed suppression. The rule fires on all subprocess.run
-    # calls and cannot be satisfied while using subprocess.
-    return subprocess.run(  # noqa: S603
-        [_gh_path(), *args],
-        capture_output=capture,
-        text=True,
-        check=check,
-    )
+    """Run a gh CLI command, retrying transient failures with exponential backoff.
+
+    When check=True, transient CalledProcessError failures are retried up to
+    MAX_RETRIES times with exponential backoff. When check=False, no retry is
+    attempted (the caller handles errors).
+    """
+    cmd = [_gh_path(), *args]
+    if not check:
+        # S603: sole allowed suppression — see module docstring.
+        return subprocess.run(cmd, capture_output=capture, text=True, check=False)  # noqa: S603
+
+    last_err: subprocess.CalledProcessError | None = None
+    for attempt in range(1, MAX_RETRIES + 2):  # attempts 1 … MAX_RETRIES+1
+        try:
+            # S603: sole allowed suppression — see module docstring.
+            return subprocess.run(cmd, capture_output=capture, text=True, check=True)  # noqa: S603
+        except subprocess.CalledProcessError as exc:
+            last_err = exc
+            if attempt <= MAX_RETRIES:
+                delay = BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+                cmd_str = " ".join(args)
+                log.warning(
+                    "[gh] `gh %s` failed (attempt %s/%s), retrying in %ss…",
+                    cmd_str,
+                    attempt,
+                    MAX_RETRIES + 1,
+                    delay,
+                )
+                time.sleep(delay)
+
+    cmd_str = " ".join(args)
+    msg = f"`gh {cmd_str}` failed after {MAX_RETRIES + 1} attempts"
+    raise subprocess.SubprocessError(msg) from last_err
 
 
 def next_open_issue() -> int | None:
