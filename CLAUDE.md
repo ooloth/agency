@@ -1,9 +1,13 @@
 # CLAUDE.md
 
-## Commands
+## Development
 
 - Run checks: `uv run --frozen prek run --all-files`
 - Run tests: `uv run --frozen pytest`
+- The lint rules are intentionally strict; do NOT add `noqa` comments; do NOT edit `ruff.toml`;
+  fix each violation in a way that improves the quality of the codebase
+
+## Running pipelines
 
 ```bash
 # Scan a project (dry run — prints without posting issues)
