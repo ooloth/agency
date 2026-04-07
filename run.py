@@ -13,11 +13,12 @@ Secrets:
 import argparse
 
 from loops.fix import run_fix
+from loops.groom import run_groom
 from loops.scan import run_scan
 
 
 def main() -> None:
-    """Parse CLI arguments and dispatch to the scan or fix loop."""
+    """Parse CLI arguments and dispatch to the scan, fix, or groom loop."""
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -30,12 +31,18 @@ def main() -> None:
     fix_p.add_argument("--issue", type=int, default=None)
     fix_p.add_argument("--project", default=None)
 
+    groom_p = sub.add_parser("groom")
+    groom_p.add_argument("project")
+    groom_p.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     if args.command == "scan":
         run_scan(args.project, args.type, dry_run=args.dry_run)
     elif args.command == "fix":
         run_fix(args.issue, args.project)
+    elif args.command == "groom":
+        run_groom(args.project, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
