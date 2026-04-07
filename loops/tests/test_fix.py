@@ -1,4 +1,4 @@
-"""Tests for the fix loop's issue-claiming label behaviour."""
+"""Tests for the fix loop's label and failure-comment behaviour."""
 
 import contextlib
 from unittest.mock import MagicMock, patch
@@ -27,11 +27,12 @@ def test_next_open_issue_excludes_stalled() -> None:
     assert "-label:agent-fix-stalled" in search_value
 
 
-def _make_fix_mocks(*, converge: bool) -> dict:
+def _make_fix_mocks(*, converge: bool, no_diff: bool = False) -> dict:
     """Build a dict of mocks suitable for patching run_fix dependencies.
 
     When converge=True the review step approves on round 1; when False
-    the loop exhausts max_rounds=1 without approval.
+    the loop exhausts max_rounds=1 without approval. When no_diff=True
+    get_diff always returns empty so the review step is never reached.
     """
     issue_json = '{"number": 7, "title": "t", "body": "b", "labels": []}'
     review = {"approved": converge, "feedback": "nope", "reflections": []}
@@ -44,12 +45,13 @@ def _make_fix_mocks(*, converge: bool) -> dict:
         "next_open_issue": lambda: 7,
         "add_label": MagicMock(),
         "remove_label": MagicMock(),
+        "comment_on_issue": MagicMock(),
         "make_run_dir": lambda _name: MagicMock(),
         "prepare_branch": lambda _n, _p: "fix/7",
         "project_context": lambda _p: "",
         "issue_context": lambda _n: issue_json,
         "commit_if_dirty": MagicMock(),
-        "get_diff": lambda _b, _p: "diff content",
+        "get_diff": (lambda _b, _p: "") if no_diff else (lambda _b, _p: "diff content"),
         "run_tests": lambda _p, _t: "ok",
         "open_pr": MagicMock(),
         "write_step": MagicMock(),
@@ -89,16 +91,48 @@ def test_label_stays_on_convergence() -> None:
 
     setup["mocks"]["add_label"].assert_called_once_with(7, "agent-fix-in-progress")
     setup["mocks"]["remove_label"].assert_not_called()
+    setup["mocks"]["comment_on_issue"].assert_not_called()
     setup["mocks"]["open_pr"].assert_called_once()
 
 
-def test_label_removed_on_non_convergence() -> None:
-    """When the loop does NOT converge, the label IS removed."""
+def test_non_convergence_posts_comment_and_stalls() -> None:
+    """When the loop does NOT converge, a failure comment is posted and the issue is stalled."""
     setup = _make_fix_mocks(converge=False)
 
     with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
         run_fix(issue_number=7, max_rounds=1)
 
-    setup["mocks"]["add_label"].assert_called_once_with(7, "agent-fix-in-progress")
     setup["mocks"]["remove_label"].assert_called_once_with(7, "agent-fix-in-progress")
     setup["mocks"]["open_pr"].assert_not_called()
+
+    # Failure comment includes round count and reviewer feedback
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    assert comment_call[0][0] == 7
+    comment_body = comment_call[0][1]
+    assert "1/1" in comment_body
+    assert "nope" in comment_body
+    assert "agent-fix-stalled" in comment_body
+
+    # Stalled label is added (second add_label call after agent-fix-in-progress)
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in add_calls]
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+
+def test_no_diff_posts_comment_and_stalls() -> None:
+    """When every round produces no diff, a failure comment is posted and the issue is stalled."""
+    setup = _make_fix_mocks(converge=False, no_diff=True)
+
+    with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
+        run_fix(issue_number=7, max_rounds=2)
+
+    setup["mocks"]["remove_label"].assert_called_once_with(7, "agent-fix-in-progress")
+    setup["mocks"]["open_pr"].assert_not_called()
+
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "2/2" in comment_body
+    assert "no diff" in comment_body
+
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
