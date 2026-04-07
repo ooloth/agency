@@ -6,7 +6,7 @@
 - `op` CLI (1Password, for secrets injection)
 - A GitHub repo for each project you want the fix loop to operate on
 
-## Install
+## Installation
 
 ```sh
 # Clone and enter the repo
@@ -20,7 +20,7 @@ uv sync --all-extras --reinstall
 uv run --frozen prek install --overwrite
 ```
 
-## Develop
+## Development
 
 - Run checks: `uv run --frozen prek run --all-files`
 - Run tests: `uv run --frozen pytest`
