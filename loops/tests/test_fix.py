@@ -3,7 +3,7 @@
 import contextlib
 from unittest.mock import MagicMock, patch
 
-from loops.common.github import remove_label
+from loops.common.github import next_open_issue, remove_label
 from loops.fix import run_fix
 
 
@@ -13,6 +13,18 @@ def test_remove_label_calls_gh_remove_label() -> None:
     mock_gh.assert_called_once_with(
         "issue", "edit", "42", "--remove-label", "agent-fix-in-progress", capture=False
     )
+
+
+def test_next_open_issue_excludes_stalled() -> None:
+    """next_open_issue passes a search filter that excludes both in-progress and stalled issues."""
+    with patch("loops.common.github.gh") as mock_gh:
+        mock_gh.return_value = MagicMock(stdout="[]")
+        next_open_issue()
+    args = mock_gh.call_args[0]
+    search_idx = list(args).index("--search")
+    search_value = args[search_idx + 1]
+    assert "-label:agent-fix-in-progress" in search_value
+    assert "-label:agent-fix-stalled" in search_value
 
 
 def _make_fix_mocks(*, converge: bool) -> dict:

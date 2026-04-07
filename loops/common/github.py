@@ -41,14 +41,14 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
 
 
 def next_open_issue() -> int | None:
-    """Return the number of the oldest open ready-for-agent issue not already claimed."""
+    """Return the number of the oldest open ready-for-agent issue not already claimed or stalled."""
     result = gh(
         "issue",
         "list",
         "--label",
         "ready-for-agent",
         "--search",
-        "-label:agent-fix-in-progress",
+        "-label:agent-fix-in-progress -label:agent-fix-stalled",
         "--json",
         "number",
         "--limit",
