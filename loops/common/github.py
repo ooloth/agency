@@ -2,7 +2,9 @@
 
 Belongs here: thin wrappers around gh commands usable by any loop or
 module (gh, create_issue, add_label, ensure_label, comment_on_issue,
-open_pr, issue_context, open_autonomous_titles, approved_issue_count, next_open_issue, post_issues).
+open_pr, issue_context, open_autonomous_issues, open_autonomous_titles,
+approved_issue_count, next_open_issue, post_issues, edit_issue_body,
+close_issue).
 
 Does not belong here: domain logic tied to a specific loop or agent
 (e.g. retrospective findings, reflection issue queries).
@@ -91,6 +93,21 @@ def issue_context(issue_number: int) -> str:
     return gh("issue", "view", str(issue_number), "--json", "number,title,body,labels").stdout
 
 
+def open_autonomous_issues() -> list[dict]:
+    """Return full details of all open autonomously-created issues."""
+    result = gh(
+        "issue",
+        "list",
+        "--label",
+        "autonomous",
+        "--json",
+        "number,title,body,labels",
+        "--limit",
+        "100",
+    )
+    return json.loads(result.stdout)
+
+
 def open_autonomous_titles() -> set[str]:
     """Return the titles of all open autonomously-created issues (for deduplication)."""
     result = gh("issue", "list", "--label", "autonomous", "--json", "title", "--limit", "100")
@@ -126,6 +143,17 @@ def post_issues(
 def comment_on_issue(issue_number: int, body: str) -> None:
     """Post a comment on an existing GitHub issue."""
     gh("issue", "comment", str(issue_number), "--body", body, capture=False)
+
+
+def edit_issue_body(issue_number: int, body: str) -> None:
+    """Replace an issue's body with new content."""
+    gh("issue", "edit", str(issue_number), "--body", body, capture=False)
+
+
+def close_issue(issue_number: int, comment: str) -> None:
+    """Close an issue with an explanatory comment."""
+    comment_on_issue(issue_number, comment)
+    gh("issue", "close", str(issue_number), capture=False)
 
 
 def ensure_label(name: str, color: str = "0075ca", description: str = "") -> None:
