@@ -42,8 +42,19 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
 
 
 def next_open_issue() -> int | None:
-    """Return the number of the oldest open ready-for-agent issue, or None."""
-    result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "1")
+    """Return the number of the oldest open ready-for-agent issue not already claimed."""
+    result = gh(
+        "issue",
+        "list",
+        "--label",
+        "ready-for-agent",
+        "--search",
+        "-label:agent-fix-in-progress",
+        "--json",
+        "number",
+        "--limit",
+        "1",
+    )
     issues = json.loads(result.stdout)
     return issues[0]["number"] if issues else None
 
@@ -122,6 +133,11 @@ def add_label(issue_number: int, label: str) -> None:
     """Ensure the label exists, then apply it to an existing issue."""
     ensure_label(label)
     gh("issue", "edit", str(issue_number), "--add-label", label, capture=False)
+
+
+def remove_label(issue_number: int, label: str) -> None:
+    """Remove a label from an existing issue."""
+    gh("issue", "edit", str(issue_number), "--remove-label", label, capture=False)
 
 
 def open_pr(branch: str, impl: dict, project_path: Path) -> None:

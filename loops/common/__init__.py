@@ -11,6 +11,7 @@ from loops.common.github import (
     open_autonomous_titles,
     open_pr,
     post_issues,
+    remove_label,
 )
 from loops.common.logging import log
 from loops.common.logs import make_run_dir, recent_run_summaries, write_step
@@ -46,6 +47,7 @@ __all__ = [
     "prepare_branch",
     "project_context",
     "recent_run_summaries",
+    "remove_label",
     "run_command",
     "run_tests",
     "scan_context",
