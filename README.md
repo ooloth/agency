@@ -11,8 +11,9 @@ for issues, triage findings, and implement fixes. You register projects and thei
 cases here, and your effects land in those projects as issues and PRs.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph scan["Scan loop (read-only)"]
+        direction LR
         S1[find] --> S2[triage] --> S3[draft] --> S4[review]
         S4 -.->|revise| S3
     end
@@ -24,6 +25,7 @@ flowchart LR
     G1 -->|edit / close| issues
     issues --> F1
     subgraph fix["Fix loop (write)"]
+        direction LR
         F1[implement] --> F2[review]
         F2 -.->|revise| F1
         F2 -->|approved| F3[open PR]
