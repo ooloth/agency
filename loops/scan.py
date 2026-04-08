@@ -10,6 +10,7 @@ from loops.common import (
     AgentConfig,
     agent,
     approved_issue_count,
+    create_issue,
     load_project,
     log,
     make_run_dir,
@@ -29,6 +30,8 @@ class _RunCtx:
     steps: list[dict]
     refs: list[dict]
     extra_labels: list[str]
+    last_draft: dict = dataclasses.field(default_factory=dict)
+    last_review_feedback: str = ""
 
 
 @dataclasses.dataclass
@@ -95,6 +98,7 @@ def _run_review_rounds(
 ) -> bool:
     """Run review/redraft rounds. Returns True if issues converged and were posted."""
     for round_n in range(max_rounds):
+        ctx.last_draft = drafted
         log.info("[scan] reviewing issues (round %s)...", round_n + 1)
         reviewed = _step(
             ctx,
@@ -107,6 +111,7 @@ def _run_review_rounds(
             action = "would post" if dry_run else "posted"
             log.info("[scan] %s: %s %s issue(s)", label, action, len(reviewed["issues"]))
             return True
+        ctx.last_review_feedback = reviewed["feedback"]
         log.info("[scan] round %s: needs revision — %s", round_n + 1, reviewed["feedback"])
         drafted = _step(
             ctx,
@@ -114,7 +119,69 @@ def _run_review_rounds(
             "prompts/scan/draft.md",
             json.dumps(reviewed),
         )
+    ctx.last_draft = drafted
     return False
+
+
+def _build_escalation_body(
+    project_id: str,
+    scan_type: str,
+    max_rounds: int,
+    last_draft: dict,
+    last_review_feedback: str,
+) -> str:
+    """Build the markdown body for a scan-escalation issue."""
+    draft_json = json.dumps(last_draft, indent=2)
+    lines = [
+        f"## Scan `{project_id}/{scan_type}` did not converge",
+        "",
+        f"The review/redraft loop ran **{max_rounds}** round(s) without the reviewer approving.",
+        "",
+        "### Last reviewer feedback",
+        "",
+        last_review_feedback or "_(no feedback captured)_",
+        "",
+        "### Last draft",
+        "",
+        "<details>",
+        "<summary>Expand draft JSON</summary>",
+        "",
+        "```json",
+        draft_json,
+        "```",
+        "",
+        "</details>",
+        "",
+        "### What to do next",
+        "",
+        "- Review the draft and feedback to decide whether the findings are worth posting manually",
+        "- Check whether the scan or review prompts need tuning",
+        "- Close this issue once addressed",
+    ]
+    return "\n".join(lines)
+
+
+def _post_escalation_issue(
+    project_id: str,
+    scan_type: str,
+    max_rounds: int,
+    ctx: _RunCtx,
+    *,
+    dry_run: bool,
+) -> None:
+    """Open (or dry-run log) a GitHub issue for a scan that failed to converge."""
+    title = f"Escalation: {project_id}/{scan_type} scan did not converge"
+    body = _build_escalation_body(
+        project_id, scan_type, max_rounds, ctx.last_draft, ctx.last_review_feedback
+    )
+    labels = ["agent-scan-stalled", "autonomous"]
+    if dry_run:
+        log.info("\n[dry-run] would post escalation issue:")
+        log.info("  title: %s", title)
+        log.info("  labels: %s", labels)
+        log.info("  body:\n%s\n", body)
+    else:
+        create_issue(title, body, labels)
 
 
 def run_scan(
@@ -178,6 +245,7 @@ def run_scan(
                 scan_type,
                 max_rounds,
             )
+            _post_escalation_issue(project_id, scan_type, max_rounds, ctx, dry_run=dry_run)
             exit_code = 1
 
     finally:
