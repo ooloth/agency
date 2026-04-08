@@ -1,5 +1,5 @@
 from loops.common.agent import AgentConfig, agent
-from loops.common.errors import AgentError, CommandError, GitError, GithubError
+from loops.common.errors import AgentError, CommandError, CommitRejectedError, GitError, GithubError
 from loops.common.git import commit_if_dirty, default_branch, get_diff, git, prepare_branch
 from loops.common.github import (
     add_label,
@@ -34,6 +34,7 @@ __all__ = [
     "AgentConfig",
     "AgentError",
     "CommandError",
+    "CommitRejectedError",
     "GitError",
     "GithubError",
     "StepCtx",

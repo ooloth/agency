@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from loops.common.errors import GitError
+from loops.common.errors import CommitRejectedError, GitError
 from loops.common.logging import log
 
 
@@ -73,10 +73,19 @@ def prepare_branch(issue_number: int, project_path: Path) -> str:
 
 
 def commit_if_dirty(message: str, project_path: Path) -> bool:
-    """Stage and commit any uncommitted changes. Returns True if a commit was made."""
+    """Stage and commit any uncommitted changes. Returns True if a commit was made.
+
+    Raises CommitRejectedError when the commit fails (e.g. pre-commit hooks
+    reject the changes), so the fix loop's error handling can produce a useful
+    failure comment instead of crashing with a raw CalledProcessError.
+    """
     if not git("status", "--porcelain", cwd=project_path).stdout.strip():
         return False
     git("add", "-A", cwd=project_path)
-    git("commit", "-m", message, cwd=project_path)
+    result = git("commit", "-m", message, cwd=project_path, check=False)
+    if result.returncode != 0:
+        stderr = result.stderr.strip() if result.stderr else ""
+        msg = f"Commit rejected (exit {result.returncode}): {stderr or message}"
+        raise CommitRejectedError(msg, path=project_path, stderr=stderr)
     log.info("[fix] committed: %r", message)
     return True

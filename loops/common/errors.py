@@ -33,6 +33,15 @@ class GitError(RuntimeError):
         self.path = path
 
 
+class CommitRejectedError(GitError):
+    """A git commit was rejected (e.g. by pre-commit hooks)."""
+
+    def __init__(self, message: str, *, path: Path | None = None, stderr: str = "") -> None:
+        """Store the repo path and stderr from the failed commit."""
+        super().__init__(message, path=path)
+        self.stderr = stderr
+
+
 class GithubError(RuntimeError):
     """The gh CLI failed after exhausting retries."""
 

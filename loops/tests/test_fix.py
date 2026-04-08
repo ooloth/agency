@@ -4,7 +4,7 @@ import contextlib
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from loops.common.errors import AgentError, CommandError, GitError
+from loops.common.errors import AgentError, CommandError, CommitRejectedError, GitError
 from loops.common.github import next_open_issue, remove_label
 from loops.fix import run_fix
 
@@ -304,3 +304,34 @@ def test_setup_failure_posts_targeted_comment() -> None:
 
     # Agent was never called (setup failed before rounds)
     setup["mocks"]["agent"].assert_not_called()
+
+
+def test_commit_rejected_error_posts_git_error_comment() -> None:
+    """A CommitRejectedError (pre-commit hook failure) is handled like any GitError."""
+    setup = _make_fix_mocks(converge=False)
+    setup["patches"]["commit_if_dirty"] = MagicMock(
+        side_effect=CommitRejectedError(
+            "Commit rejected (exit 1): ruff-check failed",
+            path=Path("/repo"),
+            stderr="ruff-check failed",
+        ),
+    )
+    setup["mocks"]["commit_if_dirty"] = setup["patches"]["commit_if_dirty"]
+
+    with (
+        patch.multiple("loops.fix", **setup["patches"]),
+        patch("loops.common.step.agent", setup["mocks"]["agent"]),
+        contextlib.suppress(SystemExit),
+    ):
+        run_fix(issue_number=7, max_rounds=1)
+
+    comment_call = setup["mocks"]["comment_on_issue"].call_args
+    comment_body = comment_call[0][1]
+    assert "Git error" in comment_body
+    assert "ruff-check failed" in comment_body
+
+    add_calls = setup["mocks"]["add_label"].call_args_list
+    assert (7, "agent-fix-stalled") in [c.args for c in add_calls]
+
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
