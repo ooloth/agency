@@ -78,6 +78,24 @@ class _RunCtx:
         write_step(self.run_dir, "reflections", self.refs)
 
 
+def _run_post_implement_checks(project: dict, project_path: Path) -> None:
+    """Run the project's check command to apply auto-fixes before committing.
+
+    The first run may auto-fix lint violations (e.g. ruff reformatting),
+    causing a non-zero exit. A second run verifies the fixes are clean.
+    If the second run still fails, the check command itself has issues
+    the agent didn't resolve — let it propagate as CommandError.
+    """
+    check_cmd = project.get("check")
+    if not check_cmd:
+        return
+    try:
+        run_command(check_cmd, project_path, "post-implement checks")
+    except CommandError:
+        log.info("[fix] checks applied auto-fixes, verifying...")
+        run_command(check_cmd, project_path, "post-implement checks (verify)")
+
+
 def _run_setup_commands(project: dict, project_path: Path) -> None:
     """Run install / check / test commands configured for the project."""
     for key, label in [
@@ -211,6 +229,8 @@ def _run_rounds(
             issue,
             AgentConfig(allowed_tools=IMPLEMENT_TOOLS),
         )
+
+        _run_post_implement_checks(project, project_path)
 
         commit_if_dirty(impl.get("pr_title", f"fix: issue #{ctx.issue_number}"), project_path)
 
