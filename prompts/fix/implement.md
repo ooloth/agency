@@ -17,8 +17,11 @@ You will receive a GitHub issue and a branch name. Your job is to:
    need to exist
 5. The branch has already been created and checked out for you — do not create
    a new branch; commit your changes to the branch you are on
-6. Ensure existing tests pass; add a test if the fix is non-trivial
-7. Do not fix anything not described in the issue
+6. Run the project's check command (if provided in the context) and fix any
+   violations before finishing. Lint rules are intentional — do not suppress
+   them with inline directives
+7. Ensure existing tests pass; add a test if the fix is non-trivial
+8. Do not fix anything not described in the issue
 
 ## Output format
 

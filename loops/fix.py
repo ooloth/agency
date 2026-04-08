@@ -192,8 +192,9 @@ def _run_rounds(
     """Run implement→review rounds until approved or max_rounds exhausted."""
     branch = prepare_branch(ctx.issue_number, project_path)
     proj_ctx = project_context(project)
+    commands = {k: project[k] for k in ("check", "test") if project.get(k)}
     issue = _with_project_ctx(
-        {"issue": json.loads(issue_context(ctx.issue_number)), "branch": branch},
+        {"issue": json.loads(issue_context(ctx.issue_number)), "branch": branch, **commands},
         proj_ctx,
     )
 
@@ -254,6 +255,7 @@ def _run_rounds(
                 "issue": json.loads(issue_context(ctx.issue_number)),
                 "branch": branch,
                 "feedback": reviewed["feedback"],
+                **commands,
             },
             proj_ctx,
         )
