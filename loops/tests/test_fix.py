@@ -103,7 +103,9 @@ def test_non_convergence_posts_comment_and_stalls() -> None:
     with patch.multiple("loops.fix", **setup["patches"]), contextlib.suppress(SystemExit):
         run_fix(issue_number=7, max_rounds=1)
 
-    setup["mocks"]["remove_label"].assert_called_once_with(7, "agent-fix-in-progress")
+    remove_calls = setup["mocks"]["remove_label"].call_args_list
+    assert (7, "agent-fix-in-progress") in [c.args for c in remove_calls]
+    assert (7, "ready-for-agent") in [c.args for c in remove_calls]
     setup["mocks"]["open_pr"].assert_not_called()
 
     # Failure comment includes round count and reviewer feedback

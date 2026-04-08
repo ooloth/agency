@@ -265,6 +265,7 @@ def run_fix(
             if ctx.rounds_completed > 0:
                 if not ctx.escalated:
                     comment_on_issue(issue_number, _build_failure_comment(ctx, max_rounds))
+                    remove_label(issue_number, "ready-for-agent")
                 add_label(issue_number, "agent-fix-stalled")
         git("checkout", original_branch, cwd=project_path)
         ctx.write_metadata()
