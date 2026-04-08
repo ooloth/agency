@@ -114,6 +114,21 @@ def open_autonomous_titles() -> set[str]:
     return {i["title"] for i in json.loads(result.stdout)}
 
 
+def open_issues() -> list[dict]:
+    """Return number, title, and body of all open issues (for cross-issue deduplication)."""
+    result = gh(
+        "issue",
+        "list",
+        "--state",
+        "open",
+        "--json",
+        "number,title,body",
+        "--limit",
+        "200",
+    )
+    return json.loads(result.stdout)
+
+
 def approved_issue_count() -> int:
     """Return the number of open ready-for-agent issues (for backpressure checks)."""
     result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "100")
