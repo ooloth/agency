@@ -4,6 +4,7 @@ import contextlib
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+from loops.common.errors import AgentError
 from loops.scan import run_scan
 
 
@@ -194,3 +195,43 @@ def test_scan_non_convergence_dry_run_skips_escalation_post() -> None:
         run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1, dry_run=True)
 
     setup["mocks"]["create_issue"].assert_not_called()
+
+
+def test_scan_agent_error_posts_escalation_with_error_details() -> None:
+    """An AgentError during a scan step posts an escalation issue with error context."""
+    project = {
+        "id": "test-project",
+        "path": "/var/test-project",
+        "scans": [{"type": "codebase/dead-code", "paths": ["src/"]}],
+    }
+
+    patches: dict[str, Any] = {
+        "approved_issue_count": MagicMock(side_effect=lambda: 0),
+        "load_project": MagicMock(side_effect=lambda _pid: project),
+        "run_scan_preflight": MagicMock(),
+        "scan_context": MagicMock(side_effect=lambda _p, _s: "context"),
+        "make_run_dir": MagicMock(return_value=MagicMock()),
+        "open_issues": MagicMock(side_effect=list),
+        "comment_on_issue": MagicMock(),
+        "create_issue": MagicMock(),
+        "write_step": MagicMock(),
+    }
+    mock_agent = MagicMock(
+        side_effect=AgentError("crashed", step="find", exit_code=1),
+    )
+
+    with (
+        patch.multiple("loops.scan", **patches),
+        patch("loops.common.step.agent", mock_agent),
+        contextlib.suppress(SystemExit),
+    ):
+        run_scan("test-project", scan_type="codebase/dead-code", max_rounds=1)
+
+    # Escalation issue posted with error details
+    create_call = patches["create_issue"].call_args
+    title, body, labels = create_call.args
+    assert "failed" in title
+    assert "test-project/codebase/dead-code" in title
+    assert "agent-scan-stalled" in labels
+    assert "find" in body
+    assert "crashed" in body

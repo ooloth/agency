@@ -8,6 +8,7 @@ from pathlib import Path
 
 from loops.common import (
     AgentConfig,
+    AgentError,
     approved_issue_count,
     comment_on_issue,
     create_issue,
@@ -31,10 +32,12 @@ class _RunCtx:
     steps: list[dict]
     refs: list[dict]
     extra_labels: list[str]
+    scan_label: str = ""
     last_draft: dict = dataclasses.field(default_factory=dict)
     last_review_feedback: str = ""
     converged: bool = False
     exit_code: int = 0
+    error: Exception | None = None
 
 
 # Find steps are read-only analysis: explicit list prevents silent Bash
@@ -154,33 +157,48 @@ def _run_review_rounds(
 
 
 def _build_escalation_body(
-    project_id: str,
-    scan_type: str,
+    scan_label: str,
     max_rounds: int,
-    last_draft: dict,
-    last_review_feedback: str,
+    ctx: _RunCtx,
 ) -> str:
     """Build the markdown body for a scan-escalation issue."""
-    draft_json = json.dumps(last_draft, indent=2)
-    lines = [
-        f"## Scan `{project_id}/{scan_type}` did not converge",
-        "",
-        f"The review/redraft loop ran **{max_rounds}** round(s) without the reviewer approving.",
-        "",
-        "### Last reviewer feedback",
-        "",
-        last_review_feedback or "_(no feedback captured)_",
-        "",
-        "### Last draft",
-        "",
-        "<details>",
-        "<summary>Expand draft JSON</summary>",
-        "",
-        "```json",
-        draft_json,
-        "```",
-        "",
-        "</details>",
+    error = ctx.error
+    if isinstance(error, AgentError):
+        detail_lines = [
+            f"The agent failed at step **{error.step}**." if error.step else "",
+            f"Exit code: `{error.exit_code}`" if error.exit_code is not None else "",
+            f"Message: {error}" if str(error) else "",
+        ]
+        lines = [
+            f"## Scan `{scan_label}` failed with an agent error",
+            "",
+            *[line for line in detail_lines if line],
+        ]
+    else:
+        draft_json = json.dumps(ctx.last_draft, indent=2)
+        lines = [
+            f"## Scan `{scan_label}` did not converge",
+            "",
+            f"The review/redraft loop ran **{max_rounds}** round(s)"
+            " without the reviewer approving.",
+            "",
+            "### Last reviewer feedback",
+            "",
+            ctx.last_review_feedback or "_(no feedback captured)_",
+            "",
+            "### Last draft",
+            "",
+            "<details>",
+            "<summary>Expand draft JSON</summary>",
+            "",
+            "```json",
+            draft_json,
+            "```",
+            "",
+            "</details>",
+        ]
+
+    lines += [
         "",
         "### What to do next",
         "",
@@ -192,18 +210,18 @@ def _build_escalation_body(
 
 
 def _post_escalation_issue(
-    project_id: str,
-    scan_type: str,
-    max_rounds: int,
     ctx: _RunCtx,
+    max_rounds: int,
     *,
     dry_run: bool,
 ) -> None:
     """Open (or dry-run log) a GitHub issue for a scan that failed to converge."""
-    title = f"Escalation: {project_id}/{scan_type} scan did not converge"
-    body = _build_escalation_body(
-        project_id, scan_type, max_rounds, ctx.last_draft, ctx.last_review_feedback
+    title = (
+        f"Escalation: {ctx.scan_label} scan failed"
+        if ctx.error is not None
+        else f"Escalation: {ctx.scan_label} scan did not converge"
     )
+    body = _build_escalation_body(ctx.scan_label, max_rounds, ctx)
     labels = ["agent-scan-stalled", "autonomous"]
     if dry_run:
         log.info("\n[dry-run] would post escalation issue:")
@@ -212,6 +230,42 @@ def _post_escalation_issue(
         log.info("  body:\n%s\n", body)
     else:
         create_issue(title, body, labels)
+
+
+def _run_scan_pipeline(
+    ctx: _RunCtx,
+    scan_type: str,
+    context: str,
+    max_rounds: int,
+    *,
+    dry_run: bool,
+) -> None:
+    """Run find → triage → draft → review/redraft, escalating on non-convergence."""
+    label = ctx.scan_label
+    log.info("[scan] %s: finding problems...", label)
+    raw = step(ctx, "find", _find_prompt(scan_type), context, _FIND_CFG)
+
+    if not raw.get("findings"):
+        log.info("[scan] %s: nothing to report", label)
+        ctx.converged = True
+        return
+
+    log.info("[scan] %s finding(s) — triaging...", len(raw["findings"]))
+    clustered = step(ctx, "triage", "prompts/scan/triage.md", json.dumps(raw))
+
+    if not clustered.get("clusters"):
+        log.info("[scan] %s: no actionable clusters after triage", label)
+        ctx.converged = True
+        return
+
+    log.info("[scan] %s cluster(s) — drafting issues...", len(clustered["clusters"]))
+    drafted = step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
+
+    ctx.converged = _run_review_rounds(ctx, drafted, max_rounds, label, dry_run=dry_run)
+    if not ctx.converged:
+        log.error("[escalate] %s: did not converge after %s rounds", label, max_rounds)
+        _post_escalation_issue(ctx, max_rounds, dry_run=dry_run)
+        ctx.exit_code = 1
 
 
 def run_scan(
@@ -239,47 +293,28 @@ def run_scan(
         summaries = recent_run_summaries()
         context = f"{context}\n\n## Recent run summaries\n\n{json.dumps(summaries, indent=2)}"
 
+    scan_label = f"{project_id}/{scan_type}"
     run_dir = make_run_dir(f"{project_id}-{scan_type.replace('/', '-')}")
-    ctx = _RunCtx(run_dir=run_dir, steps=[], refs=[], extra_labels=_issue_labels(scan_type))
+    ctx = _RunCtx(
+        run_dir=run_dir,
+        steps=[],
+        refs=[],
+        extra_labels=_issue_labels(scan_type),
+        scan_label=scan_label,
+    )
     started_at = time.monotonic()
 
     try:
-        log.info("[scan] %s/%s: finding problems...", project_id, scan_type)
-        raw = step(ctx, "find", _find_prompt(scan_type), context, _FIND_CFG)
-
-        if not raw.get("findings"):
-            log.info("[scan] %s/%s: nothing to report", project_id, scan_type)
-            ctx.converged = True
-            return
-
-        log.info("[scan] %s finding(s) — triaging...", len(raw["findings"]))
-        clustered = step(ctx, "triage", "prompts/scan/triage.md", json.dumps(raw))
-
-        if not clustered.get("clusters"):
-            log.info("[scan] %s/%s: no actionable clusters after triage", project_id, scan_type)
-            ctx.converged = True
-            return
-
-        log.info("[scan] %s cluster(s) — drafting issues...", len(clustered["clusters"]))
-        drafted = step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
-
-        ctx.converged = _run_review_rounds(
-            ctx, drafted, max_rounds, f"{project_id}/{scan_type}", dry_run=dry_run
-        )
-        if not ctx.converged:
-            log.error(
-                "[escalate] %s/%s: issues did not converge after %s rounds",
-                project_id,
-                scan_type,
-                max_rounds,
-            )
-            _post_escalation_issue(project_id, scan_type, max_rounds, ctx, dry_run=dry_run)
-            ctx.exit_code = 1
-
+        _run_scan_pipeline(ctx, scan_type, context, max_rounds, dry_run=dry_run)
+    except AgentError as exc:
+        ctx.error = exc
+        ctx.exit_code = 1
+        log.error("[scan] %s: %s: %s", scan_label, type(exc).__name__, exc)
+        _post_escalation_issue(ctx, max_rounds, dry_run=dry_run)
     finally:
         if not ctx.converged:
             ctx.exit_code = max(ctx.exit_code, 1)
-        metadata = {
+        metadata: dict = {
             "run_type": "scan",
             "project_id": project_id,
             "scan_type": scan_type,
@@ -289,6 +324,11 @@ def run_scan(
             "converged": ctx.converged,
             "exit_code": ctx.exit_code,
         }
+        if ctx.error is not None:
+            metadata["error"] = {
+                "type": type(ctx.error).__name__,
+                "message": str(ctx.error),
+            }
         write_step(run_dir, "metadata", metadata)
         write_step(run_dir, "reflections", ctx.refs)
         if ctx.exit_code != 0 and sys.exc_info()[0] is None:
