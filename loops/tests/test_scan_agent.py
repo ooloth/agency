@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from loops.common.agent import AgentConfig, agent
+from loops.common.errors import AgentError
 
 
 def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
@@ -15,7 +16,7 @@ def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
 
     with (
         patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
-        pytest.raises(RuntimeError, match="claude subprocess exited with return code 1"),
+        pytest.raises(AgentError, match="crashed"),
     ):
         agent("prompts/scan/codebase/dead-code.md", "some context")
 
@@ -38,7 +39,7 @@ def test_agent_raises_with_context_on_malformed_json(tmp_path: Path) -> None:
     with (
         patch("loops.common.agent.subprocess.Popen", return_value=proc_mock),
         patch("loops.common.agent.tempfile.NamedTemporaryFile", return_value=ntf_ctx),
-        pytest.raises(RuntimeError, match="non-JSON output"),
+        pytest.raises(AgentError, match="unparseable output"),
     ):
         agent("prompts/scan/codebase/dead-code.md", "some context")
 

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from loops.common.errors import GitError
 from loops.common.logging import log
 
 
@@ -53,7 +54,7 @@ def prepare_branch(issue_number: int, project_path: Path) -> str:
     """Ensure working tree is clean, pull latest, and create the fix branch."""
     if git("status", "--porcelain", cwd=project_path).stdout.strip():
         msg = f"Working tree in {project_path} is dirty — resolve before running fix loop"
-        raise RuntimeError(msg)
+        raise GitError(msg, path=project_path)
 
     branch = f"fix/issue-{issue_number}"
     if git("branch", "--list", branch, cwd=project_path).stdout.strip():
@@ -61,7 +62,7 @@ def prepare_branch(issue_number: int, project_path: Path) -> str:
             f"Branch {branch!r} already exists in {project_path}"
             " — delete it manually before retrying"
         )
-        raise RuntimeError(msg)
+        raise GitError(msg, path=project_path)
 
     base = default_branch(project_path)
     git("checkout", base, cwd=project_path)

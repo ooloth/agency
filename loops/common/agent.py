@@ -11,6 +11,7 @@ import threading
 import time
 from pathlib import Path
 
+from loops.common.errors import AgentError
 from loops.common.projects import ROOT
 
 
@@ -149,12 +150,13 @@ def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dic
     )
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
+    label = cfg.step_name or prompt_file
     if proc.returncode != 0:
-        msg = f"claude subprocess exited with return code {proc.returncode}"
-        raise RuntimeError(msg)
+        msg = f"Agent step {label!r} crashed (exit code {proc.returncode})"
+        raise AgentError(msg, step=label, exit_code=proc.returncode)
     if not output_file.exists():
-        msg = f"Agent did not write output to {output_file}"
-        raise RuntimeError(msg)
+        msg = f"Agent step {label!r} produced no output file"
+        raise AgentError(msg, step=label)
     text = output_file.read_text().strip()
     output_file.unlink()
     if text.startswith("```"):
@@ -164,5 +166,5 @@ def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dic
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
-        msg = f"Agent ({prompt_file}) returned non-JSON output:\n{text}"
-        raise RuntimeError(msg) from exc
+        msg = f"Agent step {label!r} returned unparseable output"
+        raise AgentError(msg, step=label, output=text) from exc

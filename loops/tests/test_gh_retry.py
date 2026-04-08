@@ -3,6 +3,9 @@
 import subprocess
 from unittest.mock import patch
 
+import pytest
+
+from loops.common.errors import GithubError
 from loops.common.github import MAX_RETRIES, gh
 
 
@@ -53,17 +56,12 @@ def test_exhausted_retries_raises_with_command_and_count() -> None:
         patch("loops.common.github._gh_path", return_value="/usr/bin/gh"),
         patch("subprocess.run", side_effect=effects),
         patch("time.sleep"),
+        pytest.raises(GithubError, match=str(MAX_RETRIES + 1)) as exc_info,
     ):
-        try:
-            gh("issue", "list", "--json", "number")
-            raised = False
-        except subprocess.SubprocessError as exc:
-            raised = True
-            msg = str(exc)
-            assert "gh issue list --json number" in msg
-            assert str(MAX_RETRIES + 1) in msg
+        gh("issue", "list", "--json", "number")
 
-    assert raised, "Expected SubprocessError after exhausting retries"
+    assert "issue list --json number" in exc_info.value.cmd
+    assert exc_info.value.attempts == MAX_RETRIES + 1
 
 
 def test_no_retry_when_check_false() -> None:

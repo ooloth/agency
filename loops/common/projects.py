@@ -5,6 +5,7 @@ import os
 import subprocess
 from pathlib import Path
 
+from loops.common.errors import CommandError
 from loops.common.logging import log
 
 ROOT = Path(__file__).parent.parent.parent
@@ -50,7 +51,7 @@ def scan_context(project: dict, scan: dict) -> str:
 
 
 def run_command(cmd: str, project_path: Path, label: str) -> None:
-    """Run an arbitrary shell command and raise RuntimeError on non-zero exit."""
+    """Run an arbitrary shell command and raise CommandError on non-zero exit."""
     log.info("[fix] %s...", label)
     env = {**os.environ, "_CMD": cmd}
     result = subprocess.run(
@@ -60,8 +61,8 @@ def run_command(cmd: str, project_path: Path, label: str) -> None:
         check=False,
     )
     if result.returncode != 0:
-        msg = f"{label} failed (exit {result.returncode})"
-        raise RuntimeError(msg)
+        msg = f"{label} failed (exit {result.returncode}): {cmd}"
+        raise CommandError(msg, cmd=cmd, exit_code=result.returncode)
 
 
 def run_tests(project_path: Path, test_cmd: str | None = None) -> dict:

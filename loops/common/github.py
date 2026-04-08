@@ -16,6 +16,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from loops.common.errors import GithubError
 from loops.common.git import git
 from loops.common.logging import log
 
@@ -65,8 +66,12 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
                 time.sleep(delay)
 
     cmd_str = " ".join(args)
-    msg = f"`gh {cmd_str}` failed after {MAX_RETRIES + 1} attempts"
-    raise subprocess.SubprocessError(msg) from last_err
+    attempts = MAX_RETRIES + 1
+    last_stderr = last_err.stderr if last_err and hasattr(last_err, "stderr") else ""
+    msg = f"`gh {cmd_str}` failed after {attempts} attempts"
+    raise GithubError(
+        msg, cmd=cmd_str, attempts=attempts, last_stderr=last_stderr or ""
+    ) from last_err
 
 
 def next_open_issue() -> int | None:
