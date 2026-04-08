@@ -17,6 +17,11 @@ flowchart LR
         S4 -.->|revise| S3
     end
     S4 -->|ready| issues[(GitHub issues)]
+    subgraph groom["Groom loop (read-only)"]
+        G1[evaluate]
+    end
+    issues -->|open| G1
+    G1 -->|edit / close| issues
     issues --> F1
     subgraph fix["Fix loop (write)"]
         F1[implement] --> F2[review]
@@ -29,9 +34,12 @@ flowchart LR
 
 - **Scan runs read**: they query logs, read codebases, or check whatever else you configure
   — they analyze what they see and propose worthwhile actions by posting well-formed GitHub issues
+- **Groom runs read**: before fixes run, groom re-evaluates every open issue against the current
+  codebase — issues that are still accurate pass through unchanged, partially stale issues get
+  their bodies edited to reflect current state, and fully resolved issues are closed
 - **Fix runs write**: they pick up open issues, implement solutions in fresh agent subprocesses,
-  and open PRs after a review pass — GitHub issues are the handoff mechanism, so scan and fix run
-  on independent schedules
+  and open PRs after a review pass — GitHub issues are the handoff mechanism, so scan, groom, and
+  fix run on independent schedules
 - **The loops are fixed**: what varies are the scan configurations — adding a new scan type is
   adding a prompt file and a scan block in `projects.json`; calibrations can be shared across
   projects or tuned per project while the same loop machinery handles the rest
@@ -85,6 +93,12 @@ uv run --frozen python run.py scan my-project --type codebase/dead-code --dry-ru
 
 # Scan a project and post issues
 uv run --frozen python run.py scan my-project --type codebase/dead-code
+
+# Groom open issues (dry run — logs verdicts without editing/closing)
+uv run --frozen python run.py groom my-project --dry-run
+
+# Groom open issues (edit partially resolved, close fully resolved)
+uv run --frozen python run.py groom my-project
 
 # Fix a specific issue
 uv run --frozen python run.py fix --issue 3 --project my-project
