@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Protocol
 
 from loops.common.agent import AgentConfig, agent
+from loops.common.errors import AgentError
 from loops.common.logs import write_step
 
 
@@ -34,7 +35,20 @@ def step(
         step_name=name,
     )
     t0 = time.monotonic()
-    out = agent(prompt, content, cfg)
+    try:
+        out = agent(prompt, content, cfg)
+    except AgentError as exc:
+        elapsed = round(time.monotonic() - t0, 1)
+        ctx.steps.append({"name": name, "duration_seconds": elapsed, "error": str(exc)})
+        error_detail = {
+            "error_type": type(exc).__name__,
+            "message": str(exc),
+            "step": exc.step,
+            "exit_code": exc.exit_code,
+            "output": exc.output,
+        }
+        write_step(ctx.run_dir, f"{name}-error", error_detail)
+        raise
     ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
     write_step(ctx.run_dir, name, out)
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
