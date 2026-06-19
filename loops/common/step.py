@@ -34,12 +34,16 @@ def step(
         transcript_path=ctx.run_dir / f"{name}-transcript.jsonl",
         step_name=name,
     )
+
     t0 = time.monotonic()
+
     try:
         out = agent(prompt, content, cfg)
     except AgentError as exc:
         elapsed = round(time.monotonic() - t0, 1)
+
         ctx.steps.append({"name": name, "duration_seconds": elapsed, "error": str(exc)})
+
         error_detail = {
             "error_type": type(exc).__name__,
             "message": str(exc),
@@ -47,9 +51,15 @@ def step(
             "exit_code": exc.exit_code,
             "output": exc.output,
         }
+
         write_step(ctx.run_dir, f"{name}-error", error_detail)
+
         raise
+
     ctx.steps.append({"name": name, "duration_seconds": round(time.monotonic() - t0, 1)})
+
     write_step(ctx.run_dir, name, out)
+
     ctx.refs.extend({"step": name, "text": r} for r in out.get("reflections", []))
+
     return out

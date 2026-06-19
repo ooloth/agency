@@ -262,6 +262,7 @@ def _run_scan_pipeline(
     drafted = step(ctx, "draft", "prompts/scan/draft.md", json.dumps(clustered))
 
     ctx.converged = _run_review_rounds(ctx, drafted, max_rounds, label, dry_run=dry_run)
+
     if not ctx.converged:
         log.error("[escalate] %s: did not converge after %s rounds", label, max_rounds)
         _post_escalation_issue(ctx, max_rounds, dry_run=dry_run)
@@ -269,7 +270,11 @@ def _run_scan_pipeline(
 
 
 def run_scan(
-    project_id: str, scan_type: str = "logs", max_rounds: int = 5, *, dry_run: bool = False
+    project_id: str,
+    scan_type: str = "logs",
+    max_rounds: int = 5,
+    *,
+    dry_run: bool = False,
 ) -> None:
     """Scan a project for problems and post issues, respecting the backpressure cap."""
     if not dry_run:
@@ -284,17 +289,22 @@ def run_scan(
 
     project = load_project(project_id)
     scan = next((s for s in project["scans"] if s["type"] == scan_type), None)
+
     if scan is None:
         msg = f"Project '{project_id}' has no '{scan_type}' scan configured"
         raise ValueError(msg)
+
     run_scan_preflight(project, scan)
+
     context = scan_context(project, scan)
+
     if scan_type in ("agency/history/scans", "agency/history/fixes"):
         summaries = recent_run_summaries()
         context = f"{context}\n\n## Recent run summaries\n\n{json.dumps(summaries, indent=2)}"
 
     scan_label = f"{project_id}/{scan_type}"
     run_dir = make_run_dir(f"{project_id}-{scan_type.replace('/', '-')}")
+
     ctx = _RunCtx(
         run_dir=run_dir,
         steps=[],
@@ -309,11 +319,14 @@ def run_scan(
     except AgentError as exc:
         ctx.error = exc
         ctx.exit_code = 1
+
         log.error("[scan] %s: %s: %s", scan_label, type(exc).__name__, exc)
+
         _post_escalation_issue(ctx, max_rounds, dry_run=dry_run)
     finally:
         if not ctx.converged:
             ctx.exit_code = max(ctx.exit_code, 1)
+
         metadata: dict = {
             "run_type": "scan",
             "project_id": project_id,
@@ -324,12 +337,15 @@ def run_scan(
             "converged": ctx.converged,
             "exit_code": ctx.exit_code,
         }
+
         if ctx.error is not None:
             metadata["error"] = {
                 "type": type(ctx.error).__name__,
                 "message": str(ctx.error),
             }
+
         write_step(run_dir, "metadata", metadata)
         write_step(run_dir, "reflections", ctx.refs)
+
         if ctx.exit_code != 0 and sys.exc_info()[0] is None:
             sys.exit(ctx.exit_code)

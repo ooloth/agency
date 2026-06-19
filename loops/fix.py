@@ -114,6 +114,7 @@ def _run_setup_commands(project: dict, project_path: Path) -> None:
 def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
     """Build a markdown comment describing why the fix loop did not converge."""
     error = ctx.error
+
     match error:
         case AgentError():
             headline = "## 🛑 Agent error during fix attempt"
@@ -137,19 +138,10 @@ def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
                     " implement→review rounds without the reviewer approving."
                 )
 
-    lines = [
-        headline,
-        "",
-        detail,
-    ]
+    lines = [headline, "", detail]
 
     if not isinstance(error, (AgentError, GitError)) and ctx.last_rejection:
-        lines += [
-            "",
-            "### Last rejection",
-            "",
-            ctx.last_rejection,
-        ]
+        lines += ["", "### Last rejection", "", ctx.last_rejection]
 
     lines += [
         "",
@@ -160,6 +152,7 @@ def _build_failure_comment(ctx: _RunCtx, max_rounds: int) -> str:
         " architectural constraints)",
         "- Remove the `agent-fix-stalled` label when ready for another attempt",
     ]
+
     return "\n".join(lines)
 
 
@@ -169,7 +162,9 @@ def _build_setup_failure_comment(exc: CommandError) -> str:
         f"Command: `{exc.cmd}`" if exc.cmd else "",
         f"Exit code: `{exc.exit_code}`" if exc.exit_code is not None else "",
     ]
+
     detail = "\n".join(line for line in detail_lines if line)
+
     return (
         f"## 🛑 Setup command failed before fix attempt\n"
         f"\n"
@@ -189,6 +184,7 @@ def _build_setup_failure_comment(exc: CommandError) -> str:
 def _build_no_diff_comment(impl: dict) -> str:
     """Build a markdown comment for when the implement agent produced no changes."""
     raw = json.dumps(impl, indent=2)
+
     return (
         "## 🔍 Agent produced no code changes\n"
         "\n"
@@ -219,6 +215,7 @@ def _run_rounds(
     branch = prepare_branch(ctx.issue_number, project_path)
     proj_ctx = project_context(project)
     commands = {k: project[k] for k in ("check", "test") if project.get(k)}
+
     issue = _with_project_ctx(
         {"issue": json.loads(issue_context(ctx.issue_number)), "branch": branch, **commands},
         proj_ctx,
