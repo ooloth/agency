@@ -37,12 +37,16 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "scan":
-        run_scan(args.project, args.type, dry_run=args.dry_run)
-    elif args.command == "fix":
-        run_fix(args.issue, args.project)
-    elif args.command == "groom":
-        run_groom(args.project, dry_run=args.dry_run)
+    match args.command:
+        case "scan":
+            run_scan(args.project, args.type, dry_run=args.dry_run)
+        case "fix":
+            run_fix(args.issue, args.project)
+        case "groom":
+            run_groom(args.project, dry_run=args.dry_run)
+        case other:
+            msg = f"Unknown command {other!r}"
+            raise ValueError(msg)
 
 
 if __name__ == "__main__":
