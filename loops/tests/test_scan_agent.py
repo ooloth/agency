@@ -9,7 +9,7 @@ from loops.common.agent import AgentConfig, agent
 from loops.common.errors import AgentError
 
 
-def test_agent_raises_on_nonzero_returncode(tmp_path: Path) -> None:
+def test_agent_raises_on_nonzero_returncode() -> None:
     proc_mock = MagicMock()
     proc_mock.stdout = iter([])
     proc_mock.returncode = 1
