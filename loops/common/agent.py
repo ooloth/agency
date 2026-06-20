@@ -36,15 +36,18 @@ def _print_event(event: dict) -> None:
     without --output-format to see the raw output and compare.
     """
     etype = event.get("type")
+
     if etype == "assistant":
         for block in event.get("message", {}).get("content", []):
             btype = block.get("type")
+
             if btype in ("text", "thinking"):
                 sys.stdout.write(block.get("text") or block.get("thinking", ""))
                 sys.stdout.flush()
             elif btype == "tool_use":
                 name = block.get("name", "?")
                 inp = block.get("input", {})
+
                 if name == "Bash":
                     cmd = inp.get("command", "").split("\n")[0][:100]
                     sys.stdout.write(f"\n  $ {cmd}\n")
@@ -58,6 +61,7 @@ def _print_event(event: dict) -> None:
                 else:
                     sys.stdout.write(f"\n  [{name}]\n")
                     sys.stdout.flush()
+
     elif etype == "result":
         sys.stdout.write("\n")
         sys.stdout.flush()
@@ -77,6 +81,7 @@ def _stream_with_timeout(
     if proc.stdout is None:
         msg = "Subprocess stdout is None"
         raise RuntimeError(msg)
+
     timed_out = threading.Event()
     start = time.monotonic()
 
@@ -87,7 +92,9 @@ def _stream_with_timeout(
     watchdog = threading.Timer(timeout_minutes * 60, _kill_on_timeout)
     watchdog.daemon = True
     watchdog.start()
+
     fh = transcript_path.open("a") if transcript_path is not None else None
+
     try:
         for raw_line in proc.stdout:
             stripped = raw_line.strip()
@@ -101,7 +108,9 @@ def _stream_with_timeout(
         watchdog.cancel()
         if fh is not None:
             fh.close()
+
     proc.wait()
+
     if timed_out.is_set():
         elapsed = time.monotonic() - start
         msg = f"Agent step '{label}' timed out after {elapsed:.0f}s (limit: {timeout_minutes:.0f}m)"
@@ -111,9 +120,12 @@ def _stream_with_timeout(
 def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dict:
     """Run a claude agent with the given prompt and context, returning its JSON output."""
     cfg = cfg or AgentConfig()
+
     prompt = (ROOT / prompt_file).read_text()
+
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
         output_file = Path(tmp.name)
+
     output_file.unlink()  # Let claude create it fresh; avoids mktemp race condition
 
     full_prompt = (
@@ -121,15 +133,19 @@ def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dic
         f"Write your JSON output to this file: {output_file}\n"
         f"Do not include the JSON in your text response."
     )
+
     allowed_str = " ".join(cfg.allowed_tools) if cfg.allowed_tools else ""
+
     env = {
         **os.environ,
         "_PROMPT": full_prompt,
         "_TURNS": str(cfg.max_turns),
         "_ALLOWED": allowed_str,
     }
+
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
+
     proc = subprocess.Popen(
         [
             "/bin/sh",
@@ -142,27 +158,35 @@ def agent(prompt_file: str, context: str, cfg: AgentConfig | None = None) -> dic
         cwd=ROOT,
         env=env,
     )
+
     _stream_with_timeout(
         proc,
         timeout_minutes=cfg.timeout_minutes,
         transcript_path=cfg.transcript_path,
         label=cfg.step_name or prompt_file,
     )
+
     sys.stdout.write(f"\n{'─' * 60}\n")
     sys.stdout.flush()
+
     label = cfg.step_name or prompt_file
+
     if proc.returncode != 0:
         msg = f"Agent step {label!r} crashed (exit code {proc.returncode})"
         raise AgentError(msg, step=label, exit_code=proc.returncode)
+
     if not output_file.exists():
         msg = f"Agent step {label!r} produced no output file"
         raise AgentError(msg, step=label)
+
     text = output_file.read_text().strip()
     output_file.unlink()
+
     if text.startswith("```"):
         lines = text.splitlines()
         end = next((i for i in range(len(lines) - 1, 0, -1) if lines[i].strip() == "```"), None)
         text = "\n".join(lines[1:end] if end else lines[1:])
+
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
