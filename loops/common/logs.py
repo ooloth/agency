@@ -12,8 +12,10 @@ LOGS_DIR = ROOT / ".logs"
 def make_run_dir(label: str) -> Path:
     """Create and return a timestamped directory under .logs/ for this run."""
     timestamp = datetime.now(tz=UTC).strftime("%Y-%m-%d-%H-%M")
+
     run_dir = LOGS_DIR / f"{timestamp}-{label}"
     run_dir.mkdir(parents=True, exist_ok=True)
+
     return run_dir
 
 
@@ -31,12 +33,15 @@ def recent_run_summaries(limit: int = 20) -> list[dict]:
     """
     if not LOGS_DIR.exists():
         return []
+
     dirs = sorted(
         (d for d in LOGS_DIR.iterdir() if d.is_dir()),
         key=lambda p: p.name,
         reverse=True,
     )[:limit]
+
     summaries = []
+
     for d in dirs:
         meta_path = d / "metadata.json"
         if not meta_path.exists():
@@ -47,4 +52,5 @@ def recent_run_summaries(limit: int = 20) -> list[dict]:
             summaries.append(meta)
         except json.JSONDecodeError:
             pass
+
     return summaries

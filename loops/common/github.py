@@ -28,9 +28,11 @@ BACKOFF_BASE_SECONDS = 1
 def _gh_path() -> str:
     """Return the absolute path to the gh CLI, raising if not installed."""
     path = shutil.which("gh")
+
     if not path:
         msg = "gh CLI not found in PATH"
         raise RuntimeError(msg)
+
     return path
 
 
@@ -42,11 +44,13 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
     attempted (the caller handles errors).
     """
     cmd = [_gh_path(), *args]
+
     if not check:
         # S603: sole allowed suppression — see module docstring.
         return subprocess.run(cmd, capture_output=capture, text=True, check=False)  # noqa: S603
 
     last_err: subprocess.CalledProcessError | None = None
+
     for attempt in range(1, MAX_RETRIES + 2):  # attempts 1 … MAX_RETRIES+1
         try:
             # S603: sole allowed suppression — see module docstring.
@@ -56,6 +60,7 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
             if attempt <= MAX_RETRIES:
                 delay = BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
                 cmd_str = " ".join(args)
+
                 log.warning(
                     "[gh] `gh %s` failed (attempt %s/%s), retrying in %ss…",
                     cmd_str,
@@ -63,15 +68,15 @@ def gh(*args: str, capture: bool = True, check: bool = True) -> subprocess.Compl
                     MAX_RETRIES + 1,
                     delay,
                 )
+
                 time.sleep(delay)
 
     cmd_str = " ".join(args)
     attempts = MAX_RETRIES + 1
     last_stderr = last_err.stderr if last_err and hasattr(last_err, "stderr") else ""
     msg = f"`gh {cmd_str}` failed after {attempts} attempts"
-    raise GithubError(
-        msg, cmd=cmd_str, attempts=attempts, last_stderr=last_stderr or ""
-    ) from last_err
+
+    raise GithubError(msg, cmd=cmd_str, attempts=attempts, last_stderr=last_stderr) from last_err
 
 
 def next_open_issue() -> int | None:
@@ -88,7 +93,9 @@ def next_open_issue() -> int | None:
         "--limit",
         "1",
     )
+
     issues = json.loads(result.stdout)
+
     return issues[0]["number"] if issues else None
 
 
@@ -109,6 +116,7 @@ def open_autonomous_issues() -> list[dict]:
         "--limit",
         "100",
     )
+
     return json.loads(result.stdout)
 
 
@@ -124,12 +132,14 @@ def open_issues() -> list[dict]:
         "--limit",
         "200",
     )
+
     return json.loads(result.stdout)
 
 
 def approved_issue_count() -> int:
     """Return the number of open ready-for-agent issues (for backpressure checks)."""
     result = gh("issue", "list", "--label", "ready-for-agent", "--json", "number", "--limit", "100")
+
     return len(json.loads(result.stdout))
 
 
@@ -153,10 +163,13 @@ def ensure_label(name: str, color: str = "0075ca", description: str = "") -> Non
     """Create the label if it doesn't already exist in the repo."""
     result = gh("label", "list", "--json", "name")
     existing = {label["name"] for label in json.loads(result.stdout)}
+
     if name not in existing:
         args = ["label", "create", name, "--color", color]
+
         if description:
             args += ["--description", description]
+
         gh(*args, capture=False)
 
 
@@ -164,6 +177,7 @@ def create_issue(title: str, body: str, labels: list[str]) -> None:
     """Ensure all labels exist, then create a GitHub issue with them."""
     for label in labels:
         ensure_label(label)
+
     gh(
         "issue",
         "create",
